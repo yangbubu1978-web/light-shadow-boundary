@@ -26,7 +26,7 @@ function getThumbnailUrl(fileId, width = 800) {
 
 // Get full-size URL for Google Drive image
 function getFullSizeUrl(fileId) {
-    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    return `https://drive.usercontent.google.com/download&export=view&id=${fileId}`;
 }
 
 // Create gallery item element
