@@ -21,12 +21,12 @@ function shuffleArray(array) {
 
 // Get thumbnail URL for Google Drive image
 function getThumbnailUrl(fileId, width = 800) {
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${width}`;
+    return `https://drive.usercontent.google.com/download?id=${fileId}&sz=w${width}`;
 }
 
 // Get full-size URL for Google Drive image
 function getFullSizeUrl(fileId) {
-    return `https://drive.usercontent.google.com/download&export=view&id=${fileId}`;
+    return `https://drive.usercontent.google.com/download?id=${fileId}`;
 }
 
 // Create gallery item element
