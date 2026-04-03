@@ -321,10 +321,14 @@ function displayImages(images) {
     
     if (images.length === 0) {
         gallery.innerHTML = '<div class="no-likes-message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><p>還沒有喜愛的照片</p></div>';
+        currentLightboxImages = [];
         return;
     }
     
     var displayImages = showOnlyLiked ? sortByLikes(images) : shuffleArray(images);
+    
+    // Store current displayed images for lightbox navigation
+    currentLightboxImages = displayImages.slice();
     
     displayImages.forEach(function(image) {
         var item = createGalleryItem(image);
@@ -336,9 +340,13 @@ function displayImages(images) {
 // Lightbox Functions
 // ========================================
 var currentLightboxImage = null;
+var currentLightboxIndex = -1;
+var currentLightboxImages = []; // Track which images are currently displayed
 
 function openLightbox(image) {
     currentLightboxImage = image;
+    currentLightboxIndex = currentLightboxImages.findIndex(function(img) { return img.id === image.id; });
+    
     var lightbox = document.querySelector('.lightbox');
     
     if (!lightbox) {
@@ -349,25 +357,103 @@ function openLightbox(image) {
     
     var isLiked = userLikes.includes(image.id);
     var likeCount = likesData[image.id] || 0;
+    var currentNum = currentLightboxIndex + 1;
+    var totalNum = currentLightboxImages.length;
     
-    lightbox.innerHTML = '<span class="lightbox-close">&times;</span><img src="" alt="' + image.name + '"><div class="lightbox-actions"><button class="like-btn ' + (isLiked ? 'liked' : '') + '" data-image-id="' + image.id + '"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button><span class="like-count">' + likeCount + '</span></div>';
+    lightbox.innerHTML = 
+        '<button class="lightbox-close-btn" aria-label="關閉">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+        '<line x1="18" y1="6" x2="6" y2="18"></line>' +
+        '<line x1="6" y1="6" x2="18" y2="18"></line>' +
+        '</svg>' +
+        '</button>' +
+        '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
+        '<img src="" alt="' + image.name + '" class="lightbox-img">' +
+        '<div class="lightbox-actions">' +
+        '<button class="like-btn ' + (isLiked ? 'liked' : '') + '" data-image-id="' + image.id + '">' +
+        '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>' +
+        '</button>' +
+        '<span class="like-count">' + likeCount + '</span>' +
+        '</div>';
     
-    var lightboxImg = lightbox.querySelector('img');
+    var lightboxImg = lightbox.querySelector('.lightbox-img');
     lightboxImg.src = getFullSizeUrl(image.id);
     
     lightbox.classList.add('active');
     
+    // Close button handler
+    var closeBtn = lightbox.querySelector('.lightbox-close-btn');
+    closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeLightbox();
+    });
+    
+    // Like button handler
     var likeBtn = lightbox.querySelector('.like-btn');
     likeBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleLike(image.id);
     });
     
+    // Image click - go to next photo
+    lightboxImg.addEventListener('click', function(e) {
+        e.stopPropagation();
+        showNextImage();
+    });
+    
+    // Backdrop click - close
     lightbox.addEventListener('click', function(e) {
         if (e.target === lightbox) {
             closeLightbox();
         }
     });
+}
+
+function showNextImage() {
+    if (currentLightboxIndex === -1 || currentLightboxImages.length === 0) return;
+    
+    // Cycle to next image
+    currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
+    var nextImage = currentLightboxImages[currentLightboxIndex];
+    
+    if (!nextImage) return;
+    
+    currentLightboxImage = nextImage;
+    var lightbox = document.querySelector('.lightbox');
+    if (!lightbox) return;
+    
+    var lightboxImg = lightbox.querySelector('.lightbox-img');
+    var isLiked = userLikes.includes(nextImage.id);
+    var likeCount = likesData[nextImage.id] || 0;
+    var currentNum = currentLightboxIndex + 1;
+    var totalNum = currentLightboxImages.length;
+    
+    // Update image
+    lightboxImg.src = getFullSizeUrl(nextImage.id);
+    lightboxImg.alt = nextImage.name;
+    
+    // Update like button
+    var likeBtn = lightbox.querySelector('.like-btn');
+    if (likeBtn) {
+        if (isLiked) {
+            likeBtn.classList.add('liked');
+        } else {
+            likeBtn.classList.remove('liked');
+        }
+        likeBtn.dataset.imageId = nextImage.id;
+    }
+    
+    // Update like count
+    var likeCountEl = lightbox.querySelector('.like-count');
+    if (likeCountEl) {
+        likeCountEl.textContent = likeCount;
+    }
+    
+    // Update slide indicator
+    var indicator = lightbox.querySelector('.lightbox-slide-indicator');
+    if (indicator) {
+        indicator.textContent = currentNum + ' / ' + totalNum;
+    }
 }
 
 function closeLightbox() {
@@ -376,6 +462,7 @@ function closeLightbox() {
         lightbox.classList.remove('active');
     }
     currentLightboxImage = null;
+    currentLightboxIndex = -1;
 }
 
 // ========================================

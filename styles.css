@@ -367,26 +367,89 @@ footer p {
     z-index: 2000;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    cursor: default;
 }
 
 .lightbox.active {
     display: flex;
 }
 
-.lightbox img {
+.lightbox-img {
     max-width: 90%;
-    max-height: 90%;
+    max-height: 80%;
     object-fit: contain;
+    cursor: pointer; /* 點擊照片可跳到下一張 */
 }
 
-.lightbox-close {
+/* 新的關閉按鈕 - 左上角圓形按鈕 */
+.lightbox-close-btn {
     position: absolute;
     top: 20px;
-    right: 30px;
+    left: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    font-size: 30px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.lightbox-close-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.lightbox-close-btn:active {
+    transform: scale(0.95);
+}
+
+.lightbox-close-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+
+/* 幻燈片指示器 - 顯示目前第幾張 */
+.lightbox-slide-indicator {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+}
+
+/* 手機版關閉按鈕更大 */
+@media (max-width: 768px) {
+    .lightbox-close-btn {
+        top: 15px;
+        left: 15px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .lightbox-close-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .lightbox-slide-indicator {
+        top: 20px;
+        font-size: 13px;
+    }
+    
+    .lightbox-img {
+        max-width: 95%;
+        max-height: 75%;
+    }
 }
 
 /* Lightbox Like Button */
