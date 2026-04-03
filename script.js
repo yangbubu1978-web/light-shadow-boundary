@@ -412,7 +412,6 @@ async function loadImages() {
         visitorId = getVisitorId();
         
         await Promise.all([loadLikesData(), loadUserLikes()]);
-        updateHeartFilterCount();
         
         // Try Google Drive API first
         var driveImages = [];
@@ -445,6 +444,8 @@ async function loadImages() {
         }
         
         displayImages(allImages);
+        updateLikesBadges();
+        updateHeartFilterCount();
         
     } catch (error) {
         console.error('Error loading images:', error);
