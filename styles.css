@@ -559,8 +559,8 @@ footer p {
     bottom: 30px;
     right: 20px;
     z-index: 999;
-    background: #ff4757;
-    border: none;
+    background: #fff;
+    border: 2px solid #ff4757;
     border-radius: 50%;
     width: 56px;
     height: 56px;
@@ -568,28 +568,29 @@ footer p {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
 }
 
 .floating-heart-filter svg {
     width: 24px;
     height: 24px;
-    stroke: #fff;
+    stroke: #ff4757;
     fill: #fff;
 }
 
 .floating-heart-filter:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
+    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
 }
 
 .floating-heart-filter.active {
-    background: #fff;
+    background: #ff4757;
+    border-color: #ff4757;
 }
 
 .floating-heart-filter.active svg {
-    stroke: #ff4757;
+    stroke: #fff;
     fill: #fff;
 }
 
