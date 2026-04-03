@@ -40,6 +40,11 @@ function createGalleryItem(image) {
     img.alt = image.name;
     img.loading = 'lazy';
     
+    // Image load handler - fade in when loaded
+    img.onload = () => {
+        img.classList.add('loaded');
+    };
+    
     // Lazy loading with Intersection Observer
     if ('IntersectionObserver' in window) {
         const observer = new IntersectionObserver((entries, obs) => {
@@ -63,6 +68,33 @@ function createGalleryItem(image) {
     
     item.appendChild(img);
     return item;
+}
+
+// Show skeleton loading placeholders
+function showSkeleton(count = 18) {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="skeleton-container">';
+    const container = gallery.querySelector('.skeleton-container');
+    
+    for (let i = 0; i < count; i++) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'skeleton-item';
+        container.appendChild(skeleton);
+    }
+    
+    const text = document.createElement('p');
+    text.className = 'skeleton-text';
+    text.textContent = '載入作品中...';
+    gallery.appendChild(text);
+}
+
+// Remove skeleton and show images
+function removeSkeleton() {
+    const gallery = document.getElementById('gallery');
+    const skeleton = gallery.querySelector('.skeleton-container');
+    const skeletonText = gallery.querySelector('.skeleton-text');
+    if (skeleton) skeleton.remove();
+    if (skeletonText) skeletonText.remove();
 }
 
 // Open lightbox with full-size image
@@ -100,6 +132,9 @@ function closeLightbox() {
 // Display images in gallery
 function displayImages(images) {
     const gallery = document.getElementById('gallery');
+    
+    // Remove skeleton loading
+    removeSkeleton();
     gallery.innerHTML = '';
     
     // Shuffle and display
@@ -113,8 +148,8 @@ function displayImages(images) {
 
 // Load images from page URL parameters or use default test images
 async function loadImages() {
-    const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">載入作品中...</div>';
+    // Show skeleton loading effect
+    showSkeleton(18);
     
     try {
         // For production: fetch from a JSON file or API
@@ -139,6 +174,7 @@ async function loadImages() {
         
     } catch (error) {
         console.error('Error loading images:', error);
+        const gallery = document.getElementById('gallery');
         gallery.innerHTML = '<div class="loading">載入失敗，請刷新重試。</div>';
     }
 }

@@ -149,6 +149,71 @@ h1, h2, h3 {
     letter-spacing: 0.1em;
 }
 
+/* Skeleton Loading Effect */
+.skeleton-container {
+    column-count: 3;
+    column-gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.skeleton-item {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+    border-radius: 2px;
+}
+
+/* Different heights to simulate masonry layout */
+.skeleton-item:nth-child(3n+1) { height: 200px; }
+.skeleton-item:nth-child(3n+2) { height: 280px; }
+.skeleton-item:nth-child(3n) { height: 240px; }
+
+@keyframes skeleton-pulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Skeleton responsive - tablet */
+@media (max-width: 1024px) {
+    .skeleton-container {
+        column-count: 2;
+    }
+}
+
+/* Skeleton responsive - mobile */
+@media (max-width: 768px) {
+    .skeleton-container {
+        column-count: 1;
+    }
+    
+    .skeleton-item:nth-child(3n+1),
+    .skeleton-item:nth-child(3n+2),
+    .skeleton-item:nth-child(3n) {
+        height: 220px;
+    }
+}
+
+.skeleton-text {
+    text-align: center;
+    padding: 60px;
+    color: #999;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+}
+
+/* Image loaded state */
+.gallery-item img {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.gallery-item img.loaded {
+    opacity: 1;
+}
+
 /* About Section */
 .about {
     padding: 100px 50px;
