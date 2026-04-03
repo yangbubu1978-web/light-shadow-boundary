@@ -1,4 +1,7 @@
-// ========================================
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+script_content = r'''// ========================================
 // The Light-Shadow Boundary - Gallery Script
 // ========================================
 
@@ -512,3 +515,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+'''
+
+filepath = '/Users/yang.bubu/.openclaw/workspace/portfolio-site/script.js'
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(script_content)
+
+print('Done')
