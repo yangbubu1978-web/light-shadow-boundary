@@ -2,15 +2,12 @@
 // The Light-Shadow Boundary - Gallery Script
 // ========================================
 
-// Google Drive Folder Configuration
-const FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
-
 // Firebase Configuration - loaded from external file
 let firebaseConfig = null;
 let database = null;
 let firebaseReady = false;
 
-// Image list from Google Drive folder
+// Image list
 let allImages = [];
 let likesData = {};
 let userLikes = [];
@@ -37,16 +34,19 @@ function loadFirebaseConfig() {
                     firebaseReady = true;
                     resolve();
                 } else {
-                    reject(new Error('Firebase config not set in firebase-config.js'));
+                    firebaseReady = false;
+                    resolve();
                 }
             };
-            script.onerror = function() { reject(new Error('Failed to load firebase-config.js')); };
+            script.onerror = function() { 
+                firebaseReady = false;
+                resolve();
+            };
             document.head.appendChild(script);
         }
     });
 }
 
-// Visitor ID Management
 function getVisitorId() {
     var id = localStorage.getItem('visitorId');
     if (!id) {
@@ -60,7 +60,7 @@ function getVisitorId() {
 // Firebase Functions
 // ========================================
 async function loadLikesData() {
-    if (!firebaseReady) return;
+    if (!firebaseReady || !database) return;
     try {
         var snapshot = await database.ref('likes').once('value');
         if (snapshot.exists()) {
@@ -73,7 +73,7 @@ async function loadLikesData() {
 }
 
 async function loadUserLikes() {
-    if (!firebaseReady) return;
+    if (!firebaseReady || !database) return;
     try {
         var snapshot = await database.ref('userLikes/' + visitorId).once('value');
         if (snapshot.exists()) {
@@ -85,7 +85,7 @@ async function loadUserLikes() {
 }
 
 async function toggleLike(imageId) {
-    if (!firebaseReady) return;
+    if (!firebaseReady || !database) return;
     var isLiked = userLikes.includes(imageId);
     var likeRef = database.ref('likes/' + imageId);
     var userLikeRef = database.ref('userLikes/' + visitorId + '/' + imageId);
@@ -116,13 +116,6 @@ async function toggleLike(imageId) {
     }
 }
 
-function getTotalLikes() {
-    return Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
-}
-
-// ========================================
-// UI Update Functions
-// ========================================
 function updateLikesBadges() {
     document.querySelectorAll('.gallery-item').forEach(function(item) {
         var imageId = item.dataset.imageId;
@@ -172,32 +165,6 @@ function getThumbnailUrl(fileId, width) {
 
 function getFullSizeUrl(fileId) {
     return 'https://lh3.googleusercontent.com/d/' + fileId;
-}
-
-// ========================================
-// Google Drive API Functions
-// ========================================
-async function fetchImagesFromDrive() {
-    var url = 'https://www.googleapis.com/drive/v3/files';
-    var params = {
-        q: "'" + FOLDER_ID + "' in parents and mimeType contains 'image/'",
-        fields: 'files(id, name, mimeType)',
-        pageSize: 500
-    };
-    
-    var queryString = Object.keys(params).map(function(key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
-    }).join('&');
-    
-    var fullUrl = url + '?' + queryString;
-    
-    var response = await fetch(fullUrl);
-    if (!response.ok) {
-        throw new Error('Failed to fetch from Google Drive');
-    }
-    
-    var data = await response.json();
-    return data.files || [];
 }
 
 // ========================================
@@ -393,7 +360,7 @@ function setupNavigation() {
 }
 
 // ========================================
-// Load Images
+// Load Images - 直接從 images.json 讀取
 // ========================================
 async function loadImages() {
     showSkeleton(18);
@@ -407,32 +374,13 @@ async function loadImages() {
         await Promise.all([loadLikesData(), loadUserLikes()]);
         updateHeartFilterCount();
         
-        // Try to fetch images from Google Drive
-        var driveImages = [];
-        try {
-            driveImages = await fetchImagesFromDrive();
-        } catch (e) {
-            console.log('Google Drive fetch failed, trying images.json:', e);
-        }
-        
-        if (driveImages.length > 0) {
-            allImages = driveImages;
+        // 直接從 images.json 讀取
+        var response = await fetch('images.json');
+        if (response.ok) {
+            var data = await response.json();
+            allImages = data.images || [];
         } else {
-            // Try loading from images.json
-            try {
-                var response = await fetch('images.json');
-                if (response.ok) {
-                    var data = await response.json();
-                    allImages = data.images || [];
-                }
-            } catch (e) {
-                console.log('images.json not found, using defaults');
-            }
-            
-            // If still no images, use defaults
-            if (allImages.length === 0) {
-                allImages = getDefaultImages();
-            }
+            allImages = getDefaultImages();
         }
         
         displayImages(allImages);
