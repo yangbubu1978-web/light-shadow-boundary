@@ -3,7 +3,6 @@
 // ========================================
 
 // Firebase Configuration - loaded from external file
-let firebaseConfig = null;
 let database = null;
 let firebaseReady = false;
 
