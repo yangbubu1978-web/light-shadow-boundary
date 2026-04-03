@@ -590,7 +590,7 @@ footer p {
 
 .floating-heart-filter.active svg {
     stroke: #ff4757;
-    fill: #ff4757;
+    fill: #fff;
 }
 
 /* Floating button count badge */
