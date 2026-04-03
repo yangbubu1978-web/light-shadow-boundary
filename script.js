@@ -7,6 +7,11 @@ let firebaseConfig = null;
 let database = null;
 let firebaseReady = false;
 
+// Google Drive API Configuration
+const GOOGLE_DRIVE_API_KEY = 'AIzaSyAo4AIfSUyoXSPFzqyuRKItGvPQDJh6iIU';
+const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
+
+
 // Image list
 let allImages = [];
 let likesData = {};
@@ -54,6 +59,41 @@ function getVisitorId() {
         localStorage.setItem('visitorId', id);
     }
     return id;
+}
+
+
+// ========================================
+// Google Drive API Functions
+// ========================================
+async function fetchImagesFromDrive() {
+    var url = 'https://www.googleapis.com/drive/v3/files';
+    var params = {
+        q: "'" + DRIVE_FOLDER_ID + "' in parents and mimeType contains 'image/'",
+        fields: 'files(id, name, mimeType)',
+        pageSize: 1000,
+        key: GOOGLE_DRIVE_API_KEY
+    };
+    
+    var queryString = Object.keys(params).map(function(key) {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+    }).join('&');
+    
+    var fullUrl = url + '?' + queryString;
+    
+    var response = await fetch(fullUrl);
+    if (!response.ok) {
+        throw new Error('Failed to fetch from Google Drive: ' + response.status);
+    }
+    
+    var data = await response.json();
+    var files = data.files || [];
+    
+    return files.map(function(file) {
+        return {
+            id: file.id,
+            name: file.name || 'Untitled'
+        };
+    });
 }
 
 // ========================================
@@ -360,26 +400,45 @@ function setupNavigation() {
 }
 
 // ========================================
-// Load Images - 直接從 images.json 讀取
+// Load Images - Google Drive API 優先
 // ========================================
 async function loadImages() {
     showSkeleton(18);
     
     try {
-        // Initialize Firebase first
         await loadFirebaseConfig();
         visitorId = getVisitorId();
         
-        // Load likes data
         await Promise.all([loadLikesData(), loadUserLikes()]);
         updateHeartFilterCount();
         
-        // 直接從 images.json 讀取
-        var response = await fetch('images.json');
-        if (response.ok) {
-            var data = await response.json();
-            allImages = data.images || [];
+        // Try Google Drive API first
+        var driveImages = [];
+        try {
+            driveImages = await fetchImagesFromDrive();
+            console.log('Google Drive API returned', driveImages.length, 'images');
+        } catch (e) {
+            console.log('Google Drive API failed:', e);
+        }
+        
+        if (driveImages.length > 0) {
+            allImages = driveImages;
         } else {
+            // Fallback to images.json
+            try {
+                var response = await fetch('images.json');
+                if (response.ok) {
+                    var data = await response.json();
+                    allImages = data.images || [];
+                } else {
+                    allImages = getDefaultImages();
+                }
+            } catch (e) {
+                allImages = getDefaultImages();
+            }
+        }
+        
+        if (allImages.length === 0) {
             allImages = getDefaultImages();
         }
         
