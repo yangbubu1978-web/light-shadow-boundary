@@ -373,13 +373,16 @@ function closeLightbox() {
 // ========================================
 function toggleHeartFilter() {
     showOnlyLiked = !showOnlyLiked;
-    var btn = document.querySelector('.heart-filter-btn');
+    var btn = document.querySelector('.nav-links .heart-filter-btn');
+    var floatingBtn = document.getElementById('floating-heart-filter');
     
     if (showOnlyLiked) {
         btn.classList.add('active');
+        if (floatingBtn) floatingBtn.classList.add('active');
         displayImages(filterLiked(allImages));
     } else {
         btn.classList.remove('active');
+        if (floatingBtn) floatingBtn.classList.remove('active');
         displayImages(allImages);
     }
 }
@@ -481,6 +484,23 @@ function getDefaultImages() {
 document.addEventListener('DOMContentLoaded', function() {
     setupNavigation();
     loadImages();
+    
+    // Floating heart filter button (mobile)
+    var floatingHeartBtn = document.getElementById('floating-heart-filter');
+    if (floatingHeartBtn) {
+        floatingHeartBtn.addEventListener('click', function() {
+            toggleHeartFilter();
+            // Sync floating button state with nav button
+            var navHeartBtn = document.querySelector('.nav-links .heart-filter-btn');
+            if (navHeartBtn) {
+                if (showOnlyLiked) {
+                    floatingHeartBtn.classList.add('active');
+                } else {
+                    floatingHeartBtn.classList.remove('active');
+                }
+            }
+        });
+    }
     
     document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
         anchor.addEventListener('click', function(e) {

@@ -552,3 +552,53 @@ footer p {
         padding: 6px 10px;
     }
 }
+
+/* Floating Heart Filter Button for Mobile */
+.floating-heart-filter {
+    position: fixed;
+    bottom: 30px;
+    right: 20px;
+    z-index: 999;
+    background: #ff4757;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    transition: all 0.3s ease;
+}
+
+.floating-heart-filter svg {
+    width: 24px;
+    height: 24px;
+    stroke: #fff;
+    fill: #fff;
+}
+
+.floating-heart-filter:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
+}
+
+.floating-heart-filter.active {
+    background: #fff;
+}
+
+.floating-heart-filter.active svg {
+    stroke: #ff4757;
+    fill: none;
+}
+
+@media (max-width: 768px) {
+    .floating-heart-filter {
+        display: flex;
+    }
+    
+    .nav-links .heart-filter-btn {
+        display: none;
+    }
+}
