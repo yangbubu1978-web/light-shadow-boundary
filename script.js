@@ -179,8 +179,9 @@ function updateLikesBadges() {
 function updateHeartFilterCount() {
     var countSpan = document.querySelector('.heart-filter-btn .filter-count');
     if (countSpan) {
-        var likedCount = userLikes.length;
-        countSpan.textContent = likedCount > 0 ? likedCount : '';
+        // Calculate total likes across ALL photos from ALL visitors
+        var totalLikes = Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
+        countSpan.textContent = totalLikes > 0 ? totalLikes : '';
     }
 }
 
@@ -378,13 +379,15 @@ function toggleHeartFilter() {
     var floatingBtn = document.getElementById('floating-heart-filter');
     
     if (showOnlyLiked) {
+        // Show sorted by likes (most liked first)
         btn.classList.add('active');
         if (floatingBtn) floatingBtn.classList.add('active');
-        displayImages(filterLiked(allImages));
+        displayImages(sortByLikes(allImages));
     } else {
+        // Show shuffled (random order)
         btn.classList.remove('active');
         if (floatingBtn) floatingBtn.classList.remove('active');
-        displayImages(allImages);
+        displayImages(shuffleArray(allImages));
     }
 }
 
@@ -492,15 +495,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (floatingHeartBtn) {
         floatingHeartBtn.addEventListener('click', function() {
             toggleHeartFilter();
-            // Sync floating button state with nav button
-            var navHeartBtn = document.querySelector('.nav-links .heart-filter-btn');
-            if (navHeartBtn) {
-                if (showOnlyLiked) {
-                    floatingHeartBtn.classList.add('active');
-                } else {
-                    floatingHeartBtn.classList.remove('active');
-                }
-            }
         });
     }
     
