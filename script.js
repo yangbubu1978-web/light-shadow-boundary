@@ -5,52 +5,224 @@
 // Google Drive Folder Configuration
 const FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
 
-// Image list from Google Drive folder
-// This will be populated when page loads
-let allImages = [];
+// Firebase Configuration - loaded from external file
+let firebaseConfig = null;
+let database = null;
+let firebaseReady = false;
 
-// Shuffle array (Fisher-Yates algorithm)
+// Image list from Google Drive folder
+let allImages = [];
+let likesData = {};
+let userLikes = [];
+let visitorId = '';
+let showOnlyLiked = false;
+
+// ========================================
+// Firebase Initialization
+// ========================================
+function loadFirebaseConfig() {
+    return new Promise(function(resolve, reject) {
+        if (typeof firebaseConfig !== 'undefined' && firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            firebaseReady = true;
+            resolve();
+        } else {
+            var script = document.createElement('script');
+            script.src = 'firebase-config.js';
+            script.onload = function() {
+                if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+                    firebase.initializeApp(firebaseConfig);
+                    database = firebase.database();
+                    firebaseReady = true;
+                    resolve();
+                } else {
+                    reject(new Error('Firebase config not set in firebase-config.js'));
+                }
+            };
+            script.onerror = function() { reject(new Error('Failed to load firebase-config.js')); };
+            document.head.appendChild(script);
+        }
+    });
+}
+
+// Visitor ID Management
+function getVisitorId() {
+    var id = localStorage.getItem('visitorId');
+    if (!id) {
+        id = 'visitor_' + Math.random().toString(36).substr(2, 9) + Date.now();
+        localStorage.setItem('visitorId', id);
+    }
+    return id;
+}
+
+// ========================================
+// Firebase Functions
+// ========================================
+async function loadLikesData() {
+    if (!firebaseReady) return;
+    try {
+        var snapshot = await database.ref('likes').once('value');
+        if (snapshot.exists()) {
+            likesData = snapshot.val();
+        }
+        updateLikesBadges();
+    } catch (error) {
+        console.error('Error loading likes:', error);
+    }
+}
+
+async function loadUserLikes() {
+    if (!firebaseReady) return;
+    try {
+        var snapshot = await database.ref('userLikes/' + visitorId).once('value');
+        if (snapshot.exists()) {
+            userLikes = Object.keys(snapshot.val());
+        }
+    } catch (error) {
+        console.error('Error loading user likes:', error);
+    }
+}
+
+async function toggleLike(imageId) {
+    if (!firebaseReady) return;
+    var isLiked = userLikes.includes(imageId);
+    var likeRef = database.ref('likes/' + imageId);
+    var userLikeRef = database.ref('userLikes/' + visitorId + '/' + imageId);
+    
+    try {
+        if (isLiked) {
+            await likeRef.transaction(function(current) { return Math.max(0, (current || 1) - 1); });
+            await userLikeRef.remove();
+            userLikes = userLikes.filter(function(id) { return id !== imageId; });
+        } else {
+            await likeRef.transaction(function(current) { return (current || 0) + 1; });
+            await userLikeRef.set(true);
+            userLikes.push(imageId);
+        }
+        
+        var currentLikes = likesData[imageId] || 0;
+        likesData[imageId] = isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+        updateLikesBadges();
+        updateLightboxLikeButton(imageId);
+        updateHeartFilterCount();
+        
+        var lightboxLikeCount = document.querySelector('.lightbox-actions .like-count');
+        if (lightboxLikeCount) {
+            lightboxLikeCount.textContent = likesData[imageId] || 0;
+        }
+    } catch (error) {
+        console.error('Error toggling like:', error);
+    }
+}
+
+function getTotalLikes() {
+    return Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
+}
+
+// ========================================
+// UI Update Functions
+// ========================================
+function updateLikesBadges() {
+    document.querySelectorAll('.gallery-item').forEach(function(item) {
+        var imageId = item.dataset.imageId;
+        var badge = item.querySelector('.like-badge');
+        var count = likesData[imageId] || 0;
+        
+        if (badge) {
+            var countSpan = badge.querySelector('.count');
+            if (countSpan) {
+                countSpan.textContent = count;
+            }
+            if (count > 0) {
+                badge.classList.add('has-likes');
+            } else {
+                badge.classList.remove('has-likes');
+            }
+        }
+    });
+}
+
+function updateHeartFilterCount() {
+    var countSpan = document.querySelector('.heart-filter-btn .filter-count');
+    if (countSpan) {
+        var likedCount = userLikes.length;
+        countSpan.textContent = likedCount > 0 ? likedCount : '';
+    }
+}
+
+function updateLightboxLikeButton(imageId) {
+    var likeBtn = document.querySelector('.lightbox-actions .like-btn');
+    if (likeBtn) {
+        if (userLikes.includes(imageId)) {
+            likeBtn.classList.add('liked');
+        } else {
+            likeBtn.classList.remove('liked');
+        }
+    }
+}
+
+// ========================================
+// Image URL Functions
+// ========================================
+function getThumbnailUrl(fileId, width) {
+    width = width || 800;
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w' + width;
+}
+
+function getFullSizeUrl(fileId) {
+    return 'https://lh3.googleusercontent.com/d/' + fileId;
+}
+
+// ========================================
+// Shuffle & Sort Functions
+// ========================================
 function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    var shuffled = array.slice();
+    for (var i = shuffled.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = shuffled[i];
+        shuffled[i] = shuffled[j];
+        shuffled[j] = temp;
     }
     return shuffled;
 }
 
-// Get thumbnail URL for Google Drive image
-function getThumbnailUrl(fileId, width = 800) {
-    return `https://lh3.googleusercontent.com/d/${fileId}=w${width}`;
+function sortByLikes(images) {
+    return images.slice().sort(function(a, b) {
+        var likesA = likesData[a.id] || 0;
+        var likesB = likesData[b.id] || 0;
+        return likesB - likesA;
+    });
 }
 
-// Get full-size URL for Google Drive image
-function getFullSizeUrl(fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+function filterLiked(images) {
+    return images.filter(function(img) { return userLikes.includes(img.id); });
 }
 
-// Create gallery item element
+// ========================================
+// Gallery Functions
+// ========================================
 function createGalleryItem(image) {
-    const item = document.createElement('div');
+    var item = document.createElement('div');
     item.className = 'gallery-item';
+    item.dataset.imageId = image.id;
     
-    const img = document.createElement('img');
+    var img = document.createElement('img');
     img.dataset.src = getThumbnailUrl(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
     img.alt = image.name;
     img.loading = 'lazy';
     
-    // Image load handler - fade in when loaded
-    img.onload = () => {
+    img.onload = function() {
         img.classList.add('loaded');
     };
     
-    // Lazy loading with Intersection Observer
     if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries, obs) => {
-            entries.forEach(entry => {
+        var observer = new IntersectionObserver(function(entries, obs) {
+            entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
-                    const lazyImg = entry.target;
+                    var lazyImg = entry.target;
                     lazyImg.src = lazyImg.dataset.src;
                     obs.unobserve(lazyImg);
                 }
@@ -61,112 +233,160 @@ function createGalleryItem(image) {
         img.src = img.dataset.src;
     }
     
-    // Click to open lightbox
-    item.addEventListener('click', () => {
+    var badge = document.createElement('div');
+    badge.className = 'like-badge';
+    badge.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><span class="count">' + (likesData[image.id] || 0) + '</span>';
+    
+    item.addEventListener('click', function() {
         openLightbox(image);
     });
     
     item.appendChild(img);
+    item.appendChild(badge);
     return item;
 }
 
-// Show skeleton loading placeholders
-function showSkeleton(count = 18) {
-    const gallery = document.getElementById('gallery');
+function showSkeleton(count) {
+    count = count || 18;
+    var gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="skeleton-container">';
-    const container = gallery.querySelector('.skeleton-container');
+    var container = gallery.querySelector('.skeleton-container');
     
-    for (let i = 0; i < count; i++) {
-        const skeleton = document.createElement('div');
+    for (var i = 0; i < count; i++) {
+        var skeleton = document.createElement('div');
         skeleton.className = 'skeleton-item';
         container.appendChild(skeleton);
     }
     
-    const text = document.createElement('p');
+    var text = document.createElement('p');
     text.className = 'skeleton-text';
     text.textContent = '載入作品中...';
     gallery.appendChild(text);
 }
 
-// Remove skeleton and show images
 function removeSkeleton() {
-    const gallery = document.getElementById('gallery');
-    const skeleton = gallery.querySelector('.skeleton-container');
-    const skeletonText = gallery.querySelector('.skeleton-text');
+    var gallery = document.getElementById('gallery');
+    var skeleton = gallery.querySelector('.skeleton-container');
+    var skeletonText = gallery.querySelector('.skeleton-text');
     if (skeleton) skeleton.remove();
     if (skeletonText) skeletonText.remove();
 }
 
-// Open lightbox with full-size image
-function openLightbox(image) {
-    let lightbox = document.querySelector('.lightbox');
-    if (!lightbox) {
-        lightbox = document.createElement('div');
-        lightbox.className = 'lightbox';
-        lightbox.innerHTML = `
-            <span class="lightbox-close">&times;</span>
-            <img src="" alt="">
-        `;
-        document.body.appendChild(lightbox);
-        
-        lightbox.addEventListener('click', (e) => {
-            if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
-                closeLightbox();
-            }
-        });
-    }
-    
-    const lightboxImg = lightbox.querySelector('img');
-    lightboxImg.src = getFullSizeUrl(image.id);
-    lightboxImg.alt = image.name;
-    lightbox.classList.add('active');
-}
-
-function closeLightbox() {
-    const lightbox = document.querySelector('.lightbox');
-    if (lightbox) {
-        lightbox.classList.remove('active');
-    }
-}
-
-// Display images in gallery
 function displayImages(images) {
-    const gallery = document.getElementById('gallery');
-    
-    // Remove skeleton loading
+    var gallery = document.getElementById('gallery');
     removeSkeleton();
     gallery.innerHTML = '';
     
-    // Shuffle and display
-    const shuffledImages = shuffleArray(images);
+    if (images.length === 0) {
+        gallery.innerHTML = '<div class="no-likes-message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><p>還沒有喜愛的照片</p></div>';
+        return;
+    }
     
-    shuffledImages.forEach(image => {
-        const item = createGalleryItem(image);
+    var displayImages = showOnlyLiked ? sortByLikes(images) : shuffleArray(images);
+    
+    displayImages.forEach(function(image) {
+        var item = createGalleryItem(image);
         gallery.appendChild(item);
     });
 }
 
-// Load images from page URL parameters or use default test images
+// ========================================
+// Lightbox Functions
+// ========================================
+var currentLightboxImage = null;
+
+function openLightbox(image) {
+    currentLightboxImage = image;
+    var lightbox = document.querySelector('.lightbox');
+    
+    if (!lightbox) {
+        lightbox = document.createElement('div');
+        lightbox.className = 'lightbox';
+        document.body.appendChild(lightbox);
+    }
+    
+    var isLiked = userLikes.includes(image.id);
+    var likeCount = likesData[image.id] || 0;
+    
+    lightbox.innerHTML = '<span class="lightbox-close">&times;</span><img src="" alt="' + image.name + '"><div class="lightbox-actions"><button class="like-btn ' + (isLiked ? 'liked' : '') + '" data-image-id="' + image.id + '"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button><span class="like-count">' + likeCount + '</span></div>';
+    
+    var lightboxImg = lightbox.querySelector('img');
+    lightboxImg.src = getFullSizeUrl(image.id);
+    
+    lightbox.classList.add('active');
+    
+    var likeBtn = lightbox.querySelector('.like-btn');
+    likeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleLike(image.id);
+    });
+    
+    lightbox.addEventListener('click', function(e) {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+}
+
+function closeLightbox() {
+    var lightbox = document.querySelector('.lightbox');
+    if (lightbox) {
+        lightbox.classList.remove('active');
+    }
+    currentLightboxImage = null;
+}
+
+// ========================================
+// Filter Toggle
+// ========================================
+function toggleHeartFilter() {
+    showOnlyLiked = !showOnlyLiked;
+    var btn = document.querySelector('.heart-filter-btn');
+    
+    if (showOnlyLiked) {
+        btn.classList.add('active');
+        displayImages(filterLiked(allImages));
+    } else {
+        btn.classList.remove('active');
+        displayImages(allImages);
+    }
+}
+
+// ========================================
+// Navigation Setup
+// ========================================
+function setupNavigation() {
+    var navLinks = document.querySelector('.nav-links');
+    
+    var heartBtn = document.createElement('button');
+    heartBtn.className = 'heart-filter-btn';
+    heartBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><span class="filter-count"></span>';
+    heartBtn.addEventListener('click', toggleHeartFilter);
+    
+    navLinks.appendChild(heartBtn);
+}
+
+// ========================================
+// Load Images
+// ========================================
 async function loadImages() {
-    // Show skeleton loading effect
     showSkeleton(18);
     
     try {
-        // For production: fetch from a JSON file or API
-        // For now, we'll use a predefined list that matches the Google Drive folder
-        // This will be updated when all photos are uploaded
+        await loadFirebaseConfig();
+        visitorId = getVisitorId();
+        await Promise.all([loadLikesData(), loadUserLikes()]);
+        updateHeartFilterCount();
         
-        // Check if there's a images.json file
         try {
-            const response = await fetch('images.json');
+            var response = await fetch('images.json');
             if (response.ok) {
-                const data = await response.json();
+                var data = await response.json();
                 allImages = data.images;
             } else {
                 throw new Error('images.json not found');
             }
-        } catch {
-            // Use default test images (the 20 images from the folder)
+        } catch (e) {
             allImages = getDefaultImages();
         }
         
@@ -174,12 +394,11 @@ async function loadImages() {
         
     } catch (error) {
         console.error('Error loading images:', error);
-        const gallery = document.getElementById('gallery');
+        var gallery = document.getElementById('gallery');
         gallery.innerHTML = '<div class="loading">載入失敗，請刷新重試。</div>';
     }
 }
 
-// Default test images (the 20 images from the folder)
 function getDefaultImages() {
     return [
         { id: '1YlU4y2WyzMdsuW6tR1Luo42ccVAuAt_H', name: '000089000007_48125894547_o.jpg' },
@@ -205,44 +424,44 @@ function getDefaultImages() {
     ];
 }
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+// ========================================
+// Initialize
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    setupNavigation();
     loadImages();
     
-    // Smooth scroll for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
         anchor.addEventListener('click', function(e) {
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
+            var target = document.querySelector(this.getAttribute('href'));
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth' });
             }
         });
     });
     
-    // Update active nav link on scroll
-    window.addEventListener('scroll', () => {
-        const sections = document.querySelectorAll('section[id]');
-        const navLinks = document.querySelectorAll('.nav-links a');
+    window.addEventListener('scroll', function() {
+        var sections = document.querySelectorAll('section[id]');
+        var navLinks = document.querySelectorAll('.nav-links a');
         
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
+        var current = '';
+        sections.forEach(function(section) {
+            var sectionTop = section.offsetTop;
             if (scrollY >= sectionTop - 100) {
                 current = section.getAttribute('id');
             }
         });
         
-        navLinks.forEach(link => {
+        navLinks.forEach(function(link) {
             link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
+            if (link.getAttribute('href') === '#' + current) {
                 link.classList.add('active');
             }
         });
     });
     
-    // Keyboard navigation for lightbox
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeLightbox();
         }
