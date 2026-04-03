@@ -177,11 +177,19 @@ function updateLikesBadges() {
 }
 
 function updateHeartFilterCount() {
+    // Calculate total likes across ALL photos from ALL visitors
+    var totalLikes = Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
+    
+    // Update desktop nav button
     var countSpan = document.querySelector('.heart-filter-btn .filter-count');
     if (countSpan) {
-        // Calculate total likes across ALL photos from ALL visitors
-        var totalLikes = Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
         countSpan.textContent = totalLikes > 0 ? totalLikes : '';
+    }
+    
+    // Update floating mobile button
+    var floatingCountSpan = document.querySelector('.floating-heart-filter .floating-filter-count');
+    if (floatingCountSpan) {
+        floatingCountSpan.textContent = totalLikes > 0 ? totalLikes : '';
     }
 }
 

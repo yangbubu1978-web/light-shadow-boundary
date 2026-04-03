@@ -593,6 +593,25 @@ footer p {
     fill: none;
 }
 
+/* Floating button count badge */
+.floating-heart-filter .floating-filter-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #fff;
+    color: #ff4757;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
 @media (max-width: 768px) {
     .floating-heart-filter {
         display: flex;
