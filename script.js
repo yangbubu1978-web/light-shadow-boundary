@@ -105,7 +105,8 @@ async function loadLikesData() {
         if (snapshot.exists()) {
             likesData = snapshot.val();
         }
-        updateLikesBadges();
+        // Don't call updateLikesBadges() here - gallery items don't exist yet!
+        // updateLikesBadges() will be called after displayImages() in loadImages()
     } catch (error) {
         console.error('Error loading likes:', error);
     }
