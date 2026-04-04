@@ -82,7 +82,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         var filesUrl = 'https://www.googleapis.com/drive/v3/files';
         var filesParams = {
             q: "'" + folderId + "' in parents and mimeType contains 'image/'",
-            fields: 'files(id, name, mimeType),nextPageToken',
+            fields: 'files(id,name,mimeType),nextPageToken',
             pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY,
             supportsAllDrives: true,
@@ -128,7 +128,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         var foldersUrl = 'https://www.googleapis.com/drive/v3/files';
         var foldersParams = {
             q: "'" + folderId + "' in parents and mimeType = 'application/vnd.google-apps.folder'",
-            fields: 'files(id, name, shortcutDetails),nextPageToken',
+            fields: 'files(id,name,shortcutDetails),nextPageToken',
             pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY,
             supportsAllDrives: true,
