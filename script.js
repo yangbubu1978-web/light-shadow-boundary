@@ -65,29 +65,41 @@ function getVisitorId() {
 // Google Drive API Functions
 // ========================================
 async function fetchImagesFromDrive() {
-    var url = 'https://www.googleapis.com/drive/v3/files';
-    var params = {
-        q: "'" + DRIVE_FOLDER_ID + "' in parents and mimeType contains 'image/'",
-        fields: 'files(id, name, mimeType)',
-        pageSize: 1200,
-        key: GOOGLE_DRIVE_API_KEY
-    };
+    var allFiles = [];
+    var nextPageToken = null;
     
-    var queryString = Object.keys(params).map(function(key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
-    }).join('&');
+    do {
+        var params = {
+            q: "'" + DRIVE_FOLDER_ID + "' in parents and mimeType contains 'image/'",
+            fields: 'files(id, name, mimeType),nextPageToken',
+            pageSize: 1000,
+            key: GOOGLE_DRIVE_API_KEY
+        };
+        
+        if (nextPageToken) {
+            params.pageToken = nextPageToken;
+        }
+        
+        var queryString = Object.keys(params).map(function(key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+        }).join('&');
+        
+        var fullUrl = 'https://www.googleapis.com/drive/v3/files' + '?' + queryString;
+        
+        var response = await fetch(fullUrl);
+        if (!response.ok) {
+            throw new Error('Failed to fetch from Google Drive: ' + response.status);
+        }
+        
+        var data = await response.json();
+        var files = data.files || [];
+        
+        allFiles = allFiles.concat(files);
+        nextPageToken = data.nextPageToken || null;
+        
+    } while (nextPageToken);
     
-    var fullUrl = url + '?' + queryString;
-    
-    var response = await fetch(fullUrl);
-    if (!response.ok) {
-        throw new Error('Failed to fetch from Google Drive: ' + response.status);
-    }
-    
-    var data = await response.json();
-    var files = data.files || [];
-    
-    return files.map(function(file) {
+    return allFiles.map(function(file) {
         return {
             id: file.id,
             name: file.name || 'Untitled'
