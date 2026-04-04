@@ -126,7 +126,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         var foldersUrl = 'https://www.googleapis.com/drive/v3/files';
         var foldersParams = {
             q: "'" + folderId + "' in parents and mimeType = 'application/vnd.google-apps.folder'",
-            fields: 'files(id, name),nextPageToken',
+            fields: 'files(id, name, shortcutDetails),nextPageToken',
             pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY,
             supportsAllDrives: true,
@@ -154,7 +154,13 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         
         for (var j = 0; j < subfolders.length; j++) {
             console.log('發現子資料夾: ' + subfolders[j].name);
-            await getFilesRecursive(subfolders[j].id, accumulatedFiles);
+            // 如果是捷徑，用捷徑的 targetId；否則用資料夾本身的 id
+            var actualFolderId = subfolders[j].id;
+            if (subfolders[j].shortcutDetails && subfolders[j].shortcutDetails.targetId) {
+                actualFolderId = subfolders[j].shortcutDetails.targetId;
+                console.log('  (捷徑指向: ' + actualFolderId + '));
+            }
+            await getFilesRecursive(actualFolderId, accumulatedFiles);
         }
         
     } while (subfoldersToken);
