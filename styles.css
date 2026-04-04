@@ -415,7 +415,8 @@ footer p {
     stroke-width: 2;
 }
 
-/* 幻燈片指示器 - 顯示目前第幾張 */
+/* 幻燈片指示器 - 顯示目前第幾張（已隱藏） */
+/* 
 .lightbox-slide-indicator {
     position: absolute;
     top: 20px;
@@ -426,6 +427,7 @@ footer p {
     letter-spacing: 0.1em;
     pointer-events: none;
 }
+*/
 
 /* 手機版關閉按鈕更大 */
 @media (max-width: 768px) {
