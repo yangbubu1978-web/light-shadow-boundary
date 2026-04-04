@@ -69,7 +69,7 @@ async function fetchImagesFromDrive() {
     var params = {
         q: "'" + DRIVE_FOLDER_ID + "' in parents and mimeType contains 'image/'",
         fields: 'files(id, name, mimeType)',
-        pageSize: 1000,
+        pageSize: 2000,
         key: GOOGLE_DRIVE_API_KEY
     };
     
