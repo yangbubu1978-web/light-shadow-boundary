@@ -84,7 +84,9 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             q: "'" + folderId + "' in parents and mimeType contains 'image/'",
             fields: 'files(id, name, mimeType),nextPageToken',
             pageSize: 1200,
-            key: GOOGLE_DRIVE_API_KEY
+            key: GOOGLE_DRIVE_API_KEY,
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true
         };
         
         if (pageToken) {
@@ -126,7 +128,9 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             q: "'" + folderId + "' in parents and mimeType = 'application/vnd.google-apps.folder'",
             fields: 'files(id, name),nextPageToken',
             pageSize: 1200,
-            key: GOOGLE_DRIVE_API_KEY
+            key: GOOGLE_DRIVE_API_KEY,
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true
         };
         
         if (subfoldersToken) {
