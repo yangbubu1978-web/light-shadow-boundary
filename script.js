@@ -158,7 +158,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             var actualFolderId = subfolders[j].id;
             if (subfolders[j].shortcutDetails && subfolders[j].shortcutDetails.targetId) {
                 actualFolderId = subfolders[j].shortcutDetails.targetId;
-                console.log('  (捷徑指向: ' + actualFolderId + '));
+                console.log('  (捷徑指向: ' + actualFolderId + ')');
             }
             await getFilesRecursive(actualFolderId, accumulatedFiles);
         }
