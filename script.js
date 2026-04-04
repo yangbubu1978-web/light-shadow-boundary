@@ -514,7 +514,7 @@ async function loadImages() {
         await Promise.all([loadLikesData(), loadUserLikes()]);
         
         // Try images.json first (fast, same domain)
-        var allImages = [];
+        allImages = [];
         try {
             var response = await fetch('images.json');
             if (response.ok) {
