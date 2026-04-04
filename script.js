@@ -99,8 +99,10 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         
         var response = await fetch(filesUrl + '?' + queryString);
         if (!response.ok) {
-            console.error('抓取檔案失敗: ' + response.status);
-            break;
+            console.error('API 錯誤 ' + response.status + ':', response.statusText);
+            var errorText = await response.text().catch(() => '無法取得錯誤詳情');
+            console.error('錯誤內容:', errorText);
+            throw new Error('API returned ' + response.status);
         }
         
         var data = await response.json();
@@ -590,7 +592,9 @@ async function loadImages() {
             allImages = await fetchImagesFromDrive();
             console.log('Google Drive API returned', allImages.length, 'images');
         } catch (e) {
-            console.log('Google Drive API failed:', e.message, '- falling back to images.json...');
+            console.error('Google Drive API failed:', e.message);
+            console.error('Error details:', e);
+            console.log('Falling back to images.json...');
             try {
                 var response = await fetch('images.json');
                 if (response.ok) {
