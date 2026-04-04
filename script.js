@@ -85,7 +85,6 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             fields: 'files(id,name,mimeType),nextPageToken',
             pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY,
-            supportsAllDrives: true,
             includeItemsFromAllDrives: true
         };
         
@@ -131,7 +130,6 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             fields: 'files(id,name,shortcutDetails),nextPageToken',
             pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY,
-            supportsAllDrives: true,
             includeItemsFromAllDrives: true
         };
         
