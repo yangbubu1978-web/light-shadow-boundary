@@ -62,52 +62,100 @@ function getVisitorId() {
 
 
 // ========================================
-// Google Drive API Functions
+// Google Drive API Functions (Recursive Subfolder Support)
 // ========================================
+
+// 遞迴抓取某資料夾及其所有子資料夾內的圖片
 async function fetchImagesFromDrive() {
+    console.log('開始遞迴抓取 Google Drive 照片（含子資料夾）...');
     var allFiles = [];
-    var nextPageToken = null;
+    await getFilesRecursive(DRIVE_FOLDER_ID, allFiles);
+    console.log('總共抓到 ' + allFiles.length + ' 張照片');
+    return allFiles;
+}
+
+// 遞迴取得某資料夾內的所有檔案（不限層級）
+async function getFilesRecursive(folderId, accumulatedFiles) {
+    var pageToken = null;
     
     do {
-        var params = {
-            q: "'" + DRIVE_FOLDER_ID + "' in parents and mimeType contains 'image/'",
+        var filesUrl = 'https://www.googleapis.com/drive/v3/files';
+        var filesParams = {
+            q: "'" + folderId + "' in parents and mimeType contains 'image/'",
             fields: 'files(id, name, mimeType),nextPageToken',
-            pageSize: 1000,
+            pageSize: 1200,
             key: GOOGLE_DRIVE_API_KEY
         };
         
-        if (nextPageToken) {
-            params.pageToken = nextPageToken;
+        if (pageToken) {
+            filesParams.pageToken = pageToken;
         }
         
-        var queryString = Object.keys(params).map(function(key) {
-            return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+        var queryString = Object.keys(filesParams).map(function(key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(filesParams[key]);
         }).join('&');
         
-        var fullUrl = 'https://www.googleapis.com/drive/v3/files' + '?' + queryString;
-        
-        var response = await fetch(fullUrl);
+        var response = await fetch(filesUrl + '?' + queryString);
         if (!response.ok) {
-            throw new Error('Failed to fetch from Google Drive: ' + response.status);
+            console.error('抓取檔案失敗: ' + response.status);
+            break;
         }
         
         var data = await response.json();
         var files = data.files || [];
         
-        allFiles = allFiles.concat(files);
-        nextPageToken = data.nextPageToken || null;
+        for (var i = 0; i < files.length; i++) {
+            accumulatedFiles.push({
+                id: files[i].id,
+                name: files[i].name || 'Untitled'
+            });
+        }
         
-    } while (nextPageToken);
+        console.log('資料夾 ' + folderId + ' 抓到 ' + files.length + ' 張，累計: ' + accumulatedFiles.length + ' 張');
+        
+        pageToken = data.nextPageToken;
+        
+    } while (pageToken);
     
-    return allFiles.map(function(file) {
-        return {
-            id: file.id,
-            name: file.name || 'Untitled'
+    // 再抓這個資料夾裡的所有子資料夾
+    var subfoldersToken = null;
+    
+    do {
+        var foldersUrl = 'https://www.googleapis.com/drive/v3/files';
+        var foldersParams = {
+            q: "'" + folderId + "' in parents and mimeType = 'application/vnd.google-apps.folder'",
+            fields: 'files(id, name),nextPageToken',
+            pageSize: 1200,
+            key: GOOGLE_DRIVE_API_KEY
         };
-    });
+        
+        if (subfoldersToken) {
+            foldersParams.pageToken = subfoldersToken;
+        }
+        
+        var foldersQueryString = Object.keys(foldersParams).map(function(key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(foldersParams[key]);
+        }).join('&');
+        
+        var foldersResponse = await fetch(foldersUrl + '?' + foldersQueryString);
+        if (!foldersResponse.ok) {
+            console.error('抓取子資料夾失敗: ' + foldersResponse.status);
+            break;
+        }
+        
+        var foldersData = await foldersResponse.json();
+        var subfolders = foldersData.files || [];
+        
+        subfoldersToken = foldersData.nextPageToken;
+        
+        for (var j = 0; j < subfolders.length; j++) {
+            console.log('發現子資料夾: ' + subfolders[j].name);
+            await getFilesRecursive(subfolders[j].id, accumulatedFiles);
+        }
+        
+    } while (subfoldersToken);
 }
 
-// ========================================
 // Firebase Functions
 // ========================================
 async function loadLikesData() {
