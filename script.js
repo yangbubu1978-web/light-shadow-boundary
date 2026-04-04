@@ -478,8 +478,8 @@ function toggleHeartFilter() {
         btn.classList.add('active');
         if (floatingBtn) floatingBtn.classList.add('active');
         displayImages(sortByLikes(allImages));
-        // Scroll to top to show the most liked photo
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to top to show the most liked photo (use scrollIntoView for better mobile compatibility)
+        document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
     } else {
         // Show shuffled (random order)
         btn.classList.remove('active');
