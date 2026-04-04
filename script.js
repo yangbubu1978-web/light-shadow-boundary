@@ -512,28 +512,25 @@ async function loadImages() {
         
         await Promise.all([loadLikesData(), loadUserLikes()]);
         
-        // Try Google Drive API first
-        var driveImages = [];
+        // Try images.json first (fast, same domain)
+        var allImages = [];
         try {
-            driveImages = await fetchImagesFromDrive();
-            console.log('Google Drive API returned', driveImages.length, 'images');
+            var response = await fetch('images.json');
+            if (response.ok) {
+                var data = await response.json();
+                allImages = data.images || [];
+                console.log('images.json loaded', allImages.length, 'images');
+            } else {
+                console.log('images.json failed, trying Google Drive API...');
+                allImages = await fetchImagesFromDrive();
+            }
         } catch (e) {
-            console.log('Google Drive API failed:', e);
-        }
-        
-        if (driveImages.length > 0) {
-            allImages = driveImages;
-        } else {
-            // Fallback to images.json
+            console.log('images.json failed:', e.message, '- trying Google Drive API...');
             try {
-                var response = await fetch('images.json');
-                if (response.ok) {
-                    var data = await response.json();
-                    allImages = data.images || [];
-                } else {
-                    allImages = getDefaultImages();
-                }
-            } catch (e) {
+                allImages = await fetchImagesFromDrive();
+                console.log('Google Drive API returned', allImages.length, 'images');
+            } catch (e2) {
+                console.log('Google Drive API also failed:', e2);
                 allImages = getDefaultImages();
             }
         }
