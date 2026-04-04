@@ -474,13 +474,10 @@ function toggleHeartFilter() {
     var floatingBtn = document.getElementById('floating-heart-filter');
     
     if (showOnlyLiked) {
-        // Show liked photos at top, then random photos below
+        // Show all photos sorted by likes (most liked first)
         btn.classList.add('active');
         if (floatingBtn) floatingBtn.classList.add('active');
-        var likedImages = allImages.filter(function(img) { return (likesData[img.id] || 0) > 0; });
-        var nonLikedImages = allImages.filter(function(img) { return (likesData[img.id] || 0) === 0; });
-        var displayList = sortByLikes(likedImages).concat(shuffleArray(nonLikedImages));
-        displayImages(displayList);
+        displayImages(sortByLikes(allImages));
     } else {
         // Show shuffled (random order)
         btn.classList.remove('active');
