@@ -312,6 +312,219 @@ function getDefaultImages() {
     ];
 }
 
+
+
+// ========================================
+// URL Helpers
+// ========================================
+function getThumbnailUrl(fileId) {
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w400';
+}
+
+function getFullSizeUrl(fileId) {
+    return 'https://lh3.googleusercontent.com/d/' + fileId;
+}
+
+// ========================================
+// Shuffle & Sort Functions
+// ========================================
+function shuffleArray(array) {
+    var shuffled = array.slice();
+    for (var i = shuffled.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = shuffled[i];
+        shuffled[i] = shuffled[j];
+        shuffled[j] = temp;
+    }
+    return shuffled;
+}
+
+function sortByNewest(images) {
+    return images.slice().sort(function(a, b) {
+        var timeA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+        var timeB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+        return timeB - timeA;
+    });
+}
+
+function isNewImage(image) {
+    if (!image.createdTime) return false;
+    var created = new Date(image.createdTime).getTime();
+    var now = Date.now();
+    var thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    return (now - created) < thirtyDays;
+}
+
+function filterNew(images) {
+    return images.filter(isNewImage);
+}
+
+// ========================================
+// Gallery Functions
+// ========================================
+function createGalleryItem(image) {
+    var item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.dataset.imageId = image.id;
+    
+    var img = document.createElement('img');
+    img.dataset.src = getThumbnailUrl(image.id);
+    img.dataset.fullSrc = getFullSizeUrl(image.id);
+    img.alt = image.name;
+    
+    img.onload = function() {
+        img.classList.add('loaded');
+    };
+    
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries, obs) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    var lazyImg = entry.target;
+                    var src = lazyImg.dataset.src;
+                    if (src) {
+                        enqueueImageLoad(lazyImg, src);
+                    }
+                    obs.unobserve(lazyImg);
+                }
+            });
+        }, {
+            rootMargin: '100px'
+        });
+        observer.observe(img);
+    } else {
+        img.src = img.dataset.src;
+    }
+    
+    // NEW badge
+    if (isNewImage(image)) {
+        var newBadge = document.createElement('div');
+        newBadge.className = 'new-badge';
+        newBadge.textContent = 'NEW';
+        item.appendChild(newBadge);
+    }
+    
+    item.addEventListener('click', function() {
+        openLightbox(image);
+    });
+    
+    item.appendChild(img);
+    return item;
+}
+
+// ========================================
+// Skeleton Loading
+// ========================================
+function showSkeleton(count) {
+    count = count || 18;
+    var gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="skeleton-container">';
+    var container = gallery.querySelector('.skeleton-container');
+    var heights = [200, 280, 240, 180, 320, 260, 220, 300, 190, 270];
+    for (var i = 0; i < count; i++) {
+        var skeleton = document.createElement('div');
+        skeleton.className = 'skeleton-item';
+        skeleton.style.height = heights[i % heights.length] + 'px';
+        container.appendChild(skeleton);
+    }
+    var textContainer = document.createElement('div');
+    textContainer.className = 'skeleton-text-container';
+    textContainer.innerHTML = '<p class="skeleton-text">載入作品中</p><p class="skeleton-subtext">敬請期待</p>';
+    gallery.appendChild(textContainer);
+}
+
+function removeSkeleton() {
+    var gallery = document.getElementById('gallery');
+    var skeleton = gallery.querySelector('.skeleton-container');
+    var skeletonText = gallery.querySelector('.skeleton-text-container');
+    if (skeleton) skeleton.remove();
+    if (skeletonText) skeletonText.remove();
+}
+
+// ========================================
+// Lightbox Variables
+// ========================================
+var currentLightboxImage = null;
+var currentLightboxIndex = -1;
+var currentLightboxImages = [];
+
+function openLightbox(image) {
+    currentLightboxImage = image;
+    currentLightboxIndex = currentLightboxImages.findIndex(function(img) { return img.id === image.id; });
+    
+    var lightbox = document.querySelector('.lightbox');
+    if (!lightbox) {
+        lightbox = document.createElement('div');
+        lightbox.className = 'lightbox';
+        document.body.appendChild(lightbox);
+    }
+    
+    var currentNum = currentLightboxIndex + 1;
+    var totalNum = currentLightboxImages.length;
+    
+    lightbox.innerHTML = 
+        '<button class="lightbox-close-btn" aria-label="關閉">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+        '<line x1="18" y1="6" x2="6" y2="18"></line>' +
+        '<line x1="6" y1="6" x2="18" y2="18"></line>' +
+        '</svg>' +
+        '</button>' +
+        '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
+        '<img src="" alt="' + image.name + '" class="lightbox-img">';
+    
+    var lightboxImg = lightbox.querySelector('.lightbox-img');
+    lightboxImg.src = getFullSizeUrl(image.id);
+    
+    lightbox.classList.add('active');
+    
+    var closeBtn = lightbox.querySelector('.lightbox-close-btn');
+    closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeLightbox();
+    });
+    
+    lightboxImg.addEventListener('click', function(e) {
+        e.stopPropagation();
+        nextLightboxImage();
+    });
+    
+    lightbox.addEventListener('click', function(e) {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+}
+
+// ========================================
+// Display Images (Main Gallery Render)
+// ========================================
+function displayImages(images) {
+    var gallery = document.getElementById('gallery');
+    removeSkeleton();
+    gallery.innerHTML = '';
+    
+    if (images.length === 0) {
+        gallery.innerHTML = '<div class="no-likes-message"><p>沒有照片</p></div>';
+        currentLightboxImages = [];
+        return;
+    }
+    
+    var displayOrder;
+    if (showOnlyNew) {
+        displayOrder = sortByNewest(filterNew(images));
+    } else {
+        displayOrder = shuffleArray(images);
+    }
+    
+    currentLightboxImages = displayOrder.slice();
+    
+    displayOrder.forEach(function(image) {
+        var item = createGalleryItem(image);
+        gallery.appendChild(item);
+    });
+}
+
+
 // ========================================
 // Initialize
 // ========================================
