@@ -7,7 +7,7 @@ let database = null;
 let firebaseReady = false;
 
 // Google Drive API Configuration
-const GOOGLE_DRIVE_API_KEY='***';
+const GOOGLE_DRIVE_API_KEY='AIzaSyAo4AIfSUyoXSPFzqyuRKItGvPQDJh6iIU';
 const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
 
 
