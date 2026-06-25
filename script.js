@@ -2,21 +2,12 @@
 // The Light-Shadow Boundary - Gallery Script
 // ========================================
 
-// Firebase Configuration - loaded from external file
-let database = null;
-let firebaseReady = false;
-
 // Google Drive API Configuration
-const GOOGLE_DRIVE_API_KEY='AIzaSyAo4AIfSUyoXSPFzqyuRKItGvPQDJh6iIU';
+const GOOGLE_DRIVE_API_KEY='***';
 const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
-
 
 // Image list
 let allImages = [];
-let likesData = {};
-let userLikes = [];
-let visitorId = '';
-let showOnlyLiked = false;
 let showOnlyNew = false;
 
 // ========================================
@@ -41,64 +32,22 @@ function processImageQueue() {
 function loadImage(img, src) {
     currentlyLoading++;
     const tempImg = new Image();
-    
+
     tempImg.onload = function() {
         img.src = src;
         img.classList.add('loaded');
         currentlyLoading--;
         processImageQueue();
     };
-    
+
     tempImg.onerror = function() {
         // Still count as loaded to unblock queue
         currentlyLoading--;
         processImageQueue();
         console.warn('Failed to load image:', src);
     };
-    
+
     tempImg.src = src;
-}
-
-// ========================================
-// Firebase Initialization
-// ========================================
-function loadFirebaseConfig() {
-    return new Promise(function(resolve, reject) {
-        if (typeof firebaseConfig !== 'undefined' && firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            firebaseReady = true;
-            resolve();
-        } else {
-            var script = document.createElement('script');
-            script.src = 'firebase-config.js';
-            script.onload = function() {
-                if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
-                    firebase.initializeApp(firebaseConfig);
-                    database = firebase.database();
-                    firebaseReady = true;
-                    resolve();
-                } else {
-                    firebaseReady = false;
-                    resolve();
-                }
-            };
-            script.onerror = function() { 
-                firebaseReady = false;
-                resolve();
-            };
-            document.head.appendChild(script);
-        }
-    });
-}
-
-function getVisitorId() {
-    var id = localStorage.getItem('visitorId');
-    if (!id) {
-        id = 'visitor_' + Math.random().toString(36).substr(2, 9) + Date.now();
-        localStorage.setItem('visitorId', id);
-    }
-    return id;
 }
 
 
@@ -210,375 +159,12 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
     } while (subfoldersToken);
 }
 
-// Firebase Functions
 // ========================================
-async function loadLikesData() {
-    if (!firebaseReady || !database) return;
+// Lightbox Navigation
+// ========================================
+
+function nextLightboxImage() {
     try {
-        var snapshot = await database.ref('likes').once('value');
-        if (snapshot.exists()) {
-            likesData = snapshot.val();
-        }
-        // Don't call updateLikesBadges() here - gallery items don't exist yet!
-        // updateLikesBadges() will be called after displayImages() in loadImages()
-    } catch (error) {
-        console.error('Error loading likes:', error);
-    }
-}
-
-async function loadUserLikes() {
-    if (!firebaseReady || !database) return;
-    try {
-        var snapshot = await database.ref('userLikes/' + visitorId).once('value');
-        if (snapshot.exists()) {
-            userLikes = Object.keys(snapshot.val());
-        }
-    } catch (error) {
-        console.error('Error loading user likes:', error);
-    }
-}
-
-async function toggleLike(imageId) {
-    if (!firebaseReady || !database) return;
-    var isLiked = userLikes.includes(imageId);
-    var likeRef = database.ref('likes/' + imageId);
-    var userLikeRef = database.ref('userLikes/' + visitorId + '/' + imageId);
-    
-    try {
-        if (isLiked) {
-            await likeRef.transaction(function(current) { return Math.max(0, (current || 1) - 1); });
-            await userLikeRef.remove();
-            userLikes = userLikes.filter(function(id) { return id !== imageId; });
-        } else {
-            await likeRef.transaction(function(current) { return (current || 0) + 1; });
-            await userLikeRef.set(true);
-            userLikes.push(imageId);
-        }
-        
-        var currentLikes = likesData[imageId] || 0;
-        likesData[imageId] = isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
-        updateLikesBadges();
-        updateLightboxLikeButton(imageId);
-        updateHeartFilterCount();
-        
-        var lightboxLikeCount = document.querySelector('.lightbox-actions .like-count');
-        if (lightboxLikeCount) {
-            lightboxLikeCount.textContent = likesData[imageId] || 0;
-        }
-    } catch (error) {
-        console.error('Error toggling like:', error);
-    }
-}
-
-function updateLikesBadges() {
-    document.querySelectorAll('.gallery-item').forEach(function(item) {
-        var imageId = item.dataset.imageId;
-        var badge = item.querySelector('.like-badge');
-        var count = likesData[imageId] || 0;
-        
-        if (badge) {
-            var countSpan = badge.querySelector('.count');
-            if (countSpan) {
-                countSpan.textContent = count;
-            }
-            if (count > 0) {
-                badge.classList.add('has-likes');
-            } else {
-                badge.classList.remove('has-likes');
-            }
-        }
-    });
-}
-
-function updateHeartFilterCount() {
-    // Calculate total likes across ALL photos from ALL visitors
-    var totalLikes = Object.values(likesData).reduce(function(sum, count) { return sum + count; }, 0);
-    
-    // Update desktop nav button
-    var countSpan = document.querySelector('.heart-filter-btn .filter-count');
-    if (countSpan) {
-        countSpan.textContent = totalLikes > 0 ? totalLikes : '';
-    }
-    
-    // Update floating mobile button
-    var floatingCountSpan = document.querySelector('.floating-heart-filter .floating-filter-count');
-    if (floatingCountSpan) {
-        floatingCountSpan.textContent = totalLikes > 0 ? totalLikes : '';
-    }
-}
-
-function updateLightboxLikeButton(imageId) {
-    var likeBtn = document.querySelector('.lightbox-actions .like-btn');
-    if (likeBtn) {
-        if (userLikes.includes(imageId)) {
-            likeBtn.classList.add('liked');
-        } else {
-            likeBtn.classList.remove('liked');
-        }
-    }
-}
-
-// ========================================
-// Image URL Functions
-// ========================================
-function getThumbnailUrl(fileId, width) {
-    width = width || 800;
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w' + width;
-}
-
-function getFullSizeUrl(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId;
-}
-
-// ========================================
-// Shuffle & Sort Functions
-// ========================================
-function shuffleArray(array) {
-    var shuffled = array.slice();
-    for (var i = shuffled.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = shuffled[i];
-        shuffled[i] = shuffled[j];
-        shuffled[j] = temp;
-    }
-    return shuffled;
-}
-
-function sortByLikes(images) {
-    return images.slice().sort(function(a, b) {
-        var likesA = likesData[a.id] || 0;
-        var likesB = likesData[b.id] || 0;
-        return likesB - likesA;
-    });
-}
-
-function sortByNewest(images) {
-    return images.slice().sort(function(a, b) {
-        var timeA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
-        var timeB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
-        return timeB - timeA;
-    });
-}
-
-function isNewImage(image) {
-    if (!image.createdTime) return false;
-    var created = new Date(image.createdTime).getTime();
-    var now = Date.now();
-    // 30 days in milliseconds
-    var thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    return (now - created) < thirtyDays;
-}
-
-function filterLiked(images) {
-    return images.filter(function(img) { return userLikes.includes(img.id); });
-}
-
-function filterNew(images) {
-    return images.filter(isNewImage);
-}
-
-// ========================================
-// Gallery Functions
-// ========================================
-function createGalleryItem(image) {
-    var item = document.createElement('div');
-    item.className = 'gallery-item';
-    item.dataset.imageId = image.id;
-    
-    var img = document.createElement('img');
-    img.dataset.src = getThumbnailUrl(image.id);
-    img.dataset.fullSrc = getFullSizeUrl(image.id);
-    img.alt = image.name;
-    // REMOVED: loading="lazy" to avoid double-fetching with IntersectionObserver
-    
-    img.onload = function() {
-        img.classList.add('loaded');
-    };
-    
-    // Use IntersectionObserver for controlled lazy loading
-    if ('IntersectionObserver' in window) {
-        var observer = new IntersectionObserver(function(entries, obs) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    var lazyImg = entry.target;
-                    var src = lazyImg.dataset.src;
-                    if (src) {
-                        // Use queue-based loading with concurrency limit
-                        enqueueImageLoad(lazyImg, src);
-                    }
-                    obs.unobserve(lazyImg);
-                }
-            });
-        }, {
-            rootMargin: '100px'  // Start loading 100px before viewport
-        });
-        observer.observe(img);
-    } else {
-        // Fallback for old browsers
-        img.src = img.dataset.src;
-    }
-    
-    var badge = document.createElement('div');
-    badge.className = 'like-badge';
-    badge.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><span class="count">' + (likesData[image.id] || 0) + '</span>';
-    
-    // NEW badge
-    if (isNewImage(image)) {
-        var newBadge = document.createElement('div');
-        newBadge.className = 'new-badge';
-        newBadge.textContent = 'NEW';
-        item.appendChild(newBadge);
-    }
-    
-    item.addEventListener('click', function() {
-        openLightbox(image);
-    });
-    
-    item.appendChild(img);
-    item.appendChild(badge);
-    return item;
-}
-
-// ========================================
-// Improved Skeleton Loading
-// ========================================
-function showSkeleton(count) {
-    count = count || 18;
-    var gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="skeleton-container">';
-    var container = gallery.querySelector('.skeleton-container');
-    
-    // Create varied heights for masonry effect
-    var heights = [200, 280, 240, 180, 320, 260, 220, 300, 190, 270];
-    
-    for (var i = 0; i < count; i++) {
-        var skeleton = document.createElement('div');
-        skeleton.className = 'skeleton-item';
-        // Vary skeleton heights to mimic real masonry layout
-        skeleton.style.height = heights[i % heights.length] + 'px';
-        container.appendChild(skeleton);
-    }
-    
-    // Add animated shimmer text
-    var textContainer = document.createElement('div');
-    textContainer.className = 'skeleton-text-container';
-    textContainer.innerHTML = '<p class="skeleton-text">載入作品中</p><p class="skeleton-subtext">敬請期待</p>';
-    gallery.appendChild(textContainer);
-}
-
-function removeSkeleton() {
-    var gallery = document.getElementById('gallery');
-    var skeleton = gallery.querySelector('.skeleton-container');
-    var skeletonText = gallery.querySelector('.skeleton-text-container');
-    if (skeleton) skeleton.remove();
-    if (skeletonText) skeletonText.remove();
-}
-
-function displayImages(images) {
-    var gallery = document.getElementById('gallery');
-    removeSkeleton();
-    gallery.innerHTML = '';
-    
-    if (images.length === 0) {
-        gallery.innerHTML = '<div class="no-likes-message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><p>還沒有喜愛的照片</p></div>';
-        currentLightboxImages = [];
-        return;
-    }
-    
-    // Determine display order: if NEW filter is on, sort by newest; if heart filter is on, sort by likes; otherwise shuffle
-    var displayImages;
-    if (showOnlyNew) {
-        displayImages = sortByNewest(filterNew(images));
-    } else if (showOnlyLiked) {
-        displayImages = sortByLikes(filterLiked(images));
-    } else {
-        displayImages = shuffleArray(images);
-    }
-    
-    // Store current displayed images for lightbox navigation
-    currentLightboxImages = displayImages.slice();
-    
-    displayImages.forEach(function(image) {
-        var item = createGalleryItem(image);
-        gallery.appendChild(item);
-    });
-}
-
-// ========================================
-// Lightbox Functions
-// ========================================
-var currentLightboxImage = null;
-var currentLightboxIndex = -1;
-var currentLightboxImages = []; // Track which images are currently displayed
-
-function openLightbox(image) {
-    currentLightboxImage = image;
-    currentLightboxIndex = currentLightboxImages.findIndex(function(img) { return img.id === image.id; });
-    
-    var lightbox = document.querySelector('.lightbox');
-    
-    if (!lightbox) {
-        lightbox = document.createElement('div');
-        lightbox.className = 'lightbox';
-        document.body.appendChild(lightbox);
-    }
-    
-    var isLiked = userLikes.includes(image.id);
-    var likeCount = likesData[image.id] || 0;
-    var currentNum = currentLightboxIndex + 1;
-    var totalNum = currentLightboxImages.length;
-    
-    lightbox.innerHTML = 
-        '<button class="lightbox-close-btn" aria-label="關閉">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-        '<line x1="18" y1="6" x2="6" y2="18"></line>' +
-        '<line x1="6" y1="6" x2="18" y2="18"></line>' +
-        '</svg>' +
-        '</button>' +
-        '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
-        '<img src="" alt="' + image.name + '" class="lightbox-img">' +
-        '<div class="lightbox-actions">' +
-        '<button class="like-btn ' + (isLiked ? 'liked' : '') + '" data-image-id="' + image.id + '">' +
-        '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>' +
-        '</button>' +
-        '<span class="like-count">' + likeCount + '</span>' +
-        '</div>';
-    
-    var lightboxImg = lightbox.querySelector('.lightbox-img');
-    lightboxImg.src = getFullSizeUrl(image.id);
-    
-    lightbox.classList.add('active');
-    
-    // Close button handler
-    var closeBtn = lightbox.querySelector('.lightbox-close-btn');
-    closeBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        closeLightbox();
-    });
-    
-    // Like button handler
-    var likeBtn = lightbox.querySelector('.like-btn');
-    likeBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleLike(image.id);
-    });
-    
-    // Image click - go to next photo
-    lightboxImg.addEventListener('click', function(e) {
-        e.stopPropagation();
-        showNextImage();
-    });
-    
-    // Backdrop click - close
-    lightbox.addEventListener('click', function(e) {
-        if (e.target === lightbox) {
-            closeLightbox();
-        }
-    });
-}
-
-function showNextImage() {
-    if (currentLightboxIndex === -1 || currentLightboxImages.length === 0) return;
     
     // Cycle to next image
     currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
@@ -591,8 +177,6 @@ function showNextImage() {
     if (!lightbox) return;
     
     var lightboxImg = lightbox.querySelector('.lightbox-img');
-    var isLiked = userLikes.includes(nextImage.id);
-    var likeCount = likesData[nextImage.id] || 0;
     var currentNum = currentLightboxIndex + 1;
     var totalNum = currentLightboxImages.length;
     
@@ -600,27 +184,13 @@ function showNextImage() {
     lightboxImg.src = getFullSizeUrl(nextImage.id);
     lightboxImg.alt = nextImage.name;
     
-    // Update like button
-    var likeBtn = lightbox.querySelector('.like-btn');
-    if (likeBtn) {
-        if (isLiked) {
-            likeBtn.classList.add('liked');
-        } else {
-            likeBtn.classList.remove('liked');
-        }
-        likeBtn.dataset.imageId = nextImage.id;
-    }
-    
-    // Update like count
-    var likeCountEl = lightbox.querySelector('.like-count');
-    if (likeCountEl) {
-        likeCountEl.textContent = likeCount;
-    }
-    
     // Update slide indicator
     var indicator = lightbox.querySelector('.lightbox-slide-indicator');
     if (indicator) {
         indicator.textContent = currentNum + ' / ' + totalNum;
+    }
+    } catch (error) {
+        console.error('Error navigating images:', error);
     }
 }
 
@@ -636,41 +206,20 @@ function closeLightbox() {
 // ========================================
 // Filter Toggle (Heart + New)
 // ========================================
-function toggleHeartFilter() {
-    showOnlyLiked = !showOnlyLiked;
-    showOnlyNew = false; // Turn off NEW filter when toggling heart
-    var btn = document.querySelector('.nav-links .heart-filter-btn');
-    var newBtn = document.querySelector('.nav-links .new-filter-btn');
-    var floatingBtn = document.getElementById('floating-heart-filter');
-    
-    if (showOnlyLiked) {
-        btn.classList.add('active');
-        if (newBtn) newBtn.classList.remove('active');
-        if (floatingBtn) floatingBtn.classList.remove('active');
-        displayImages(allImages);
-        document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
-    } else {
-        btn.classList.remove('active');
-        if (floatingBtn) floatingBtn.classList.remove('active');
-        displayImages(allImages);
-    }
-}
 
 function toggleNewFilter() {
     showOnlyNew = !showOnlyNew;
-    showOnlyLiked = false; // Turn off heart filter when toggling NEW
     var btn = document.querySelector('.nav-links .new-filter-btn');
-    var heartBtn = document.querySelector('.nav-links .heart-filter-btn');
-    var floatingBtn = document.getElementById('floating-heart-filter');
-    
+    var floatingBtn = document.getElementById('floating-new-filter');
+
     if (showOnlyNew) {
         btn.classList.add('active');
-        if (heartBtn) heartBtn.classList.remove('active');
-        if (floatingBtn) floatingBtn.classList.remove('active');
+        if (floatingBtn) floatingBtn.classList.add('active');
         displayImages(allImages);
         document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
     } else {
         btn.classList.remove('active');
+        if (floatingBtn) floatingBtn.classList.remove('active');
         displayImages(allImages);
     }
 }
@@ -680,20 +229,13 @@ function toggleNewFilter() {
 // ========================================
 function setupNavigation() {
     var navLinks = document.querySelector('.nav-links');
-    
-    // Heart (Liked) Filter Button
-    var heartBtn = document.createElement('button');
-    heartBtn.className = 'heart-filter-btn';
-    heartBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><span class="filter-count"></span>';
-    heartBtn.addEventListener('click', toggleHeartFilter);
-    
+
     // NEW Filter Button
     var newBtn = document.createElement('button');
     newBtn.className = 'new-filter-btn';
     newBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="new-filter-label">NEW</span>';
     newBtn.addEventListener('click', toggleNewFilter);
-    
-    navLinks.appendChild(heartBtn);
+
     navLinks.appendChild(newBtn);
 }
 
@@ -704,10 +246,8 @@ async function loadImages() {
     showSkeleton(18);
     
     try {
-        await loadFirebaseConfig();
-        visitorId = getVisitorId();
+
         
-        await Promise.all([loadLikesData(), loadUserLikes()]);
         
         // Try Google Drive API first (to get all photos including subfolders)
         allImages = [];
@@ -739,8 +279,6 @@ async function loadImages() {
         }
         
         displayImages(allImages);
-        updateLikesBadges();
-        updateHeartFilterCount();
         
     } catch (error) {
         console.error('Error loading images:', error);
@@ -781,11 +319,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setupNavigation();
     loadImages();
     
-    // Floating heart filter button (mobile)
-    var floatingHeartBtn = document.getElementById('floating-heart-filter');
-    if (floatingHeartBtn) {
-        floatingHeartBtn.addEventListener('click', function() {
-            toggleHeartFilter();
+    // Floating new filter button (mobile)
+    var floatingNewBtn = document.getElementById('floating-new-filter');
+    if (floatingNewBtn) {
+        floatingNewBtn.addEventListener('click', function() {
+            toggleNewFilter();
         });
     }
     

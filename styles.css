@@ -765,16 +765,15 @@ footer p {
 }
 
 /* Floating Heart Filter Button for Mobile */
-.floating-heart-filter {
+.floating-new-filter {
     position: fixed;
     bottom: 30px;
     right: 20px;
     z-index: 999;
-    background: #fff;
-    border: 2px solid #ff4757;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
+    background: #2d5a27;
+    border: 2px solid #4a8f42;
+    border-radius: 25px;
+    padding: 8px 16px;
     display: none;
     align-items: center;
     justify-content: center;
@@ -783,52 +782,21 @@ footer p {
     transition: all 0.3s ease;
 }
 
-.floating-heart-filter svg {
-    width: 24px;
-    height: 24px;
-    stroke: #ff4757;
-    fill: #fff;
+.floating-new-filter:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(45, 90, 39, 0.3);
 }
 
-.floating-heart-filter:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
-}
-
-.floating-heart-filter.active {
-    background: #ff4757;
-    border-color: #ff4757;
-}
-
-.floating-heart-filter.active svg {
-    stroke: #fff;
-    fill: #fff;
-}
-
-/* Floating button count badge */
-.floating-heart-filter .floating-filter-count {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #fff;
-    color: #ff4757;
-    font-size: 11px;
-    font-weight: bold;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+.floating-new-filter.active {
+    background: #4a8f42;
+    border-color: #2d5a27;
 }
 
 @media (max-width: 768px) {
-    .floating-heart-filter {
+    .floating-new-filter {
         display: flex;
     }
-    
+
     .nav-links .heart-filter-btn,
     .nav-links .new-filter-btn {
         display: none;
