@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Light-Shadow Boundary</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">The Light-Shadow Boundary</div>
+        <div class="nav-links">
+            <a href="#home" class="active">HOME</a>
+            <a href="#portfolio">PORTFOLIO</a>
+            <a href="#about">ABOUT</a>
+            <a href="#contact">CONTACT</a>
+            <!-- 愛心＆NEW篩選按鈕會由 JavaScript 動態加入 -->
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero">
+        <div class="hero-content">
+            <h1>The Light-Shadow Boundary</h1>
+            <p class="hero-quote">「在光影的交界處紀錄，讓那些即將被時間忘卻的真實，留下記憶的輪廓。」</p>
+            <p class="about-quote">「街頭、人像，路過的貓。」</p>
+            <p class="about-text">
+                沒什麼大道理，只想在光影交界處按下快門，記錄下被時間忘卻的影像輪廓。我是雅布
+            </p>
+        </div>
+    </header>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio">
+        <div class="section-header">
+            <h2>PORTFOLIO</h2>
+        </div>
+        <div id="gallery" class="masonry-gallery">
+            <!-- Images will be loaded here by JavaScript -->
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="section-header">
+            <h2>ABOUT</h2>
+        </div>
+        <div class="about-content">
+            <p class="about-quote">「街頭、人像，路過的貓。」</p>
+            <p class="about-text">
+                沒什麼大道理，只想在光影交界處按下快門，記錄下被時間忘卻的影像輪廓。我是雅布
+            </p>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="section-header">
+            <h2>CONTACT</h2>
+        </div>
+        <div class="contact-content">
+            <p>對於作品有興趣，歡迎來信交流。</p>
+            <p class="contact-email">yabu.san@gmail.com</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 The Light-Shadow Boundary. All rights reserved.</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Config (請在 firebase-config.js 填入您的設定) -->
+    <script src="firebase-config.js"></script>
+    
+    <script src="script.js?v=20260405d"></script>
+
+    <!-- Floating Heart Filter Button (Mobile) -->
+    <button class="floating-heart-filter" id="floating-heart-filter" title="只看喜歡">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+        <span class="floating-filter-count"></span>
+    </button>
+</body>
+</html>
