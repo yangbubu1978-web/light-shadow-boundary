@@ -1,5 +1,6 @@
 // ========================================
 // The Light-Shadow Boundary - Gallery Script
+// (Optimized: Batch rendering + Lightbox preload + Shared observer)
 // ========================================
 
 // Google Drive API Configuration
@@ -11,13 +12,43 @@ let allImages = [];
 let showOnlyNew = false;
 
 // ========================================
-// Image Loading Queue (Performance Optimization)
+// Shared Global Intersection Observer
 // ========================================
-const MAX_CONCURRENT_LOADS = 3;  // Limit concurrent image loads
+let globalObserver = null;
 let imageLoadQueue = [];
 let currentlyLoading = 0;
+const MAX_CONCURRENT_LOADS = 6;  // Increased for better parallelism
 
+function initGlobalObserver() {
+    if (globalObserver) return;
+    globalObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var img = entry.target;
+                var src = img.dataset.src;
+                if (src && !img.src) {
+                    enqueueImageLoad(img, src);
+                }
+                globalObserver.unobserve(img);
+            }
+        });
+    }, {
+        rootMargin: '200px'  // Preload 200px before viewport
+    });
+}
+
+function observeImage(img) {
+    if (!globalObserver) initGlobalObserver();
+    globalObserver.observe(img);
+}
+
+// ========================================
+// Image Load Queue (Concurrent)
+// ========================================
 function enqueueImageLoad(img, src) {
+    // Avoid duplicate loads
+    if (img.dataset.loaded === 'true') return;
+    img.dataset.loaded = 'true';
     imageLoadQueue.push({ img, src });
     processImageQueue();
 }
@@ -32,30 +63,45 @@ function processImageQueue() {
 function loadImage(img, src) {
     currentlyLoading++;
     const tempImg = new Image();
-
     tempImg.onload = function() {
         img.src = src;
         img.classList.add('loaded');
         currentlyLoading--;
         processImageQueue();
     };
-
     tempImg.onerror = function() {
-        // Still count as loaded to unblock queue
         currentlyLoading--;
         processImageQueue();
+        img.dataset.loaded = 'false'; // allow retry
         console.warn('Failed to load image:', src);
     };
-
     tempImg.src = src;
 }
 
+// ========================================
+// Lightbox Preload Cache
+// ========================================
+let lightboxPreloadCache = new Map();
+
+function preloadImage(fileId) {
+    if (lightboxPreloadCache.has(fileId)) return;
+    const url = getFullSizeUrl(fileId);
+    const img = new Image();
+    img.src = url;
+    lightboxPreloadCache.set(fileId, img);
+}
+
+function preloadAdjacentImages(index) {
+    const prev = currentLightboxImages[index - 1];
+    const next = currentLightboxImages[index + 1];
+    if (prev) preloadImage(prev.id);
+    if (next) preloadImage(next.id);
+}
 
 // ========================================
 // Google Drive API Functions (Recursive Subfolder Support)
 // ========================================
 
-// 遞迴抓取某資料夾及其所有子資料夾內的圖片
 async function fetchImagesFromDrive() {
     console.log('開始遞迴抓取 Google Drive 照片（含子資料夾）...');
     var allFiles = [];
@@ -64,7 +110,6 @@ async function fetchImagesFromDrive() {
     return allFiles;
 }
 
-// 遞迴取得某資料夾內的所有檔案（不限層級）
 async function getFilesRecursive(folderId, accumulatedFiles) {
     var pageToken = null;
     
@@ -89,9 +134,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         
         var response = await fetch(filesUrl + '?' + queryString);
         if (!response.ok) {
-            console.error('API 錯誤 ' + response.status + ':', response.statusText);
-            var errorText = await response.text().catch(() => '無法取得錯誤詳情');
-            console.error('錯誤內容:', errorText);
+            console.error('API 錯誤 ' + response.status + ':', response.statusStatusText);
             throw new Error('API returned ' + response.status);
         }
         
@@ -107,12 +150,11 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         }
         
         console.log('資料夾 ' + folderId + ' 抓到 ' + files.length + ' 張，累計: ' + accumulatedFiles.length + ' 張');
-        
         pageToken = data.nextPageToken;
         
     } while (pageToken);
     
-    // 再抓這個資料夾裡的所有子資料夾
+    // 再抓子資料夾
     var subfoldersToken = null;
     
     do {
@@ -135,19 +177,14 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         }).join('&');
         
         var foldersResponse = await fetch(foldersUrl + '?' + foldersQueryString);
-        if (!foldersResponse.ok) {
-            console.error('抓取子資料夾失敗: ' + foldersResponse.status);
-            break;
-        }
+        if (!foldersResponse.ok) break;
         
         var foldersData = await foldersResponse.json();
         var subfolders = foldersData.files || [];
-        
         subfoldersToken = foldersData.nextPageToken;
         
         for (var j = 0; j < subfolders.length; j++) {
             console.log('發現子資料夾: ' + subfolders[j].name);
-            // 如果是捷徑，用捷徑的 targetId；否則用資料夾本身的 id
             var actualFolderId = subfolders[j].id;
             if (subfolders[j].shortcutDetails && subfolders[j].shortcutDetails.targetId) {
                 actualFolderId = subfolders[j].shortcutDetails.targetId;
@@ -165,26 +202,22 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
 
 function nextLightboxImage() {
     try {
-    
-    // Cycle to next image
     currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
     var nextImage = currentLightboxImages[currentLightboxIndex];
-    
     if (!nextImage) return;
-    
     currentLightboxImage = nextImage;
     var lightbox = document.querySelector('.lightbox');
     if (!lightbox) return;
-    
     var lightboxImg = lightbox.querySelector('.lightbox-img');
     var currentNum = currentLightboxIndex + 1;
     var totalNum = currentLightboxImages.length;
     
-    // Update image
     lightboxImg.src = getFullSizeUrl(nextImage.id);
     lightboxImg.alt = nextImage.name;
     
-    // Update slide indicator
+    // Preload adjacent images
+    preloadAdjacentImages(currentLightboxIndex);
+    
     var indicator = lightbox.querySelector('.lightbox-slide-indicator');
     if (indicator) {
         indicator.textContent = currentNum + ' / ' + totalNum;
@@ -204,7 +237,7 @@ function closeLightbox() {
 }
 
 // ========================================
-// Filter Toggle (Heart + New)
+// Filter Toggle
 // ========================================
 
 function toggleNewFilter() {
@@ -215,13 +248,12 @@ function toggleNewFilter() {
     if (showOnlyNew) {
         btn.classList.add('active');
         if (floatingBtn) floatingBtn.classList.add('active');
-        displayImages(allImages);
-        document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
     } else {
         btn.classList.remove('active');
         if (floatingBtn) floatingBtn.classList.remove('active');
-        displayImages(allImages);
     }
+    displayImages(allImages);
+    document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
 }
 
 // ========================================
@@ -230,46 +262,33 @@ function toggleNewFilter() {
 function setupNavigation() {
     var navLinks = document.querySelector('.nav-links');
 
-    // NEW Filter Button
     var newBtn = document.createElement('button');
     newBtn.className = 'new-filter-btn';
     newBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="new-filter-label">NEW</span>';
     newBtn.addEventListener('click', toggleNewFilter);
-
     navLinks.appendChild(newBtn);
 }
 
 // ========================================
-// Load Images - Google Drive API 優先
+// Load Images
 // ========================================
 async function loadImages() {
     showSkeleton(18);
     
     try {
-
-        
-        
-        // Try Google Drive API first (to get all photos including subfolders)
         allImages = [];
         try {
             allImages = await fetchImagesFromDrive();
             console.log('Google Drive API returned', allImages.length, 'images');
         } catch (e) {
             console.error('Google Drive API failed:', e.message);
-            console.error('Error details:', e);
-            console.log('Falling back to images.json...');
             try {
                 var response = await fetch('images.json');
                 if (response.ok) {
                     var data = await response.json();
                     allImages = data.images || [];
-                    console.log('images.json loaded', allImages.length, 'images (fallback mode)');
-                } else {
-                    console.log('images.json also failed');
-                    allImages = getDefaultImages();
                 }
             } catch (e2) {
-                console.log('images.json also failed:', e2.message);
                 allImages = getDefaultImages();
             }
         }
@@ -277,6 +296,12 @@ async function loadImages() {
         if (allImages.length === 0) {
             allImages = getDefaultImages();
         }
+        
+        // Preload first few thumbnails immediately
+        allImages.slice(0, 12).forEach(function(img) {
+            var preloader = new Image();
+            preloader.src = getThumbnailUrl(img.id);
+        });
         
         displayImages(allImages);
         
@@ -298,21 +323,9 @@ function getDefaultImages() {
         { id: '1iJpP4J5C1QswEHH9YGeA3FUDYKa7ncwm', name: '000016650033_48049127462_o.jpg' },
         { id: '1OSBhks_-DrslKJ8SHuqFZILMxGx5aZH-', name: '000016650034_48055175693_o.jpg' },
         { id: '1rCxSrTLve-UzKATTl3qoD9MUesiv07d0', name: 'cnv000014_48024174878_o.jpg' },
-        { id: '1guMq7L9OfXCogwVYWDIW39XBhgT970jl', name: 'cnv000010_48036529803_o.jpg' },
-        { id: '1X0P5J0R1Hw_3_ingAZ8HpJEB6ZND6Tjg', name: 'cnv000029_48018712302_o.jpg' },
-        { id: '1-UmfKY5YxR3B6oTGu6NA4SFA-mS47JtS', name: 'cnv000012_48030482656_o.jpg' },
-        { id: '1nJEnzFM1tEWLEjM7ck4rddi0XizbpEho', name: 'cnv000022_48043569352_o.jpg' },
-        { id: '1882Vwft4h_ifgBOw5UlRC_MkvQIb4-np', name: 'cnv000016_48006681016_o.jpg' },
-        { id: '1kOREo49cXHRU-vir-sZf4FJbwReJZ65U', name: 'cnv000025_47972674711_o.jpg' },
-        { id: '1S9EA2aZbuRzs36trClV2k14A3TYjvYm1', name: 'cnv000026_47984586543_o.jpg' },
-        { id: '1KnINNtB-q4CmJ44mIRRLkarFfCOuIdvc', name: 'cnv000024_47972617552_o.jpg' },
-        { id: '1oFpEblVBEZjVrGIbDLvMTeadwg-Z8uhQ', name: 'cnv000015_47999798363_o.jpg' },
-        { id: '1fwy8Er5_UQKuCgR7Y3EgYUM7elfvWY0I', name: 'cnv000019_47993133231_o.jpg' },
-        { id: '1R6g6IAc7YauiiyIR5TD-AhR-PTij5lIq', name: 'cnv000020_48013069612_o.jpg' }
+        { id: '1guMq7L9OfXCogwVYWDIW39XBhgT970jl', name: 'cnv000010_48036529803_o.jpg' }
     ];
 }
-
-
 
 // ========================================
 // URL Helpers
@@ -326,7 +339,7 @@ function getFullSizeUrl(fileId) {
 }
 
 // ========================================
-// Shuffle & Sort Functions
+// Shuffle & Sort
 // ========================================
 function shuffleArray(array) {
     var shuffled = array.slice();
@@ -360,7 +373,7 @@ function filterNew(images) {
 }
 
 // ========================================
-// Gallery Functions
+// Gallery Functions (Optimized)
 // ========================================
 function createGalleryItem(image) {
     var item = document.createElement('div');
@@ -376,27 +389,9 @@ function createGalleryItem(image) {
         img.classList.add('loaded');
     };
     
-    if ('IntersectionObserver' in window) {
-        var observer = new IntersectionObserver(function(entries, obs) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    var lazyImg = entry.target;
-                    var src = lazyImg.dataset.src;
-                    if (src) {
-                        enqueueImageLoad(lazyImg, src);
-                    }
-                    obs.unobserve(lazyImg);
-                }
-            });
-        }, {
-            rootMargin: '100px'
-        });
-        observer.observe(img);
-    } else {
-        img.src = img.dataset.src;
-    }
+    // Use shared global observer (lazy load)
+    observeImage(img);
     
-    // NEW badge
     if (isNewImage(image)) {
         var newBadge = document.createElement('div');
         newBadge.className = 'new-badge';
@@ -475,6 +470,9 @@ function openLightbox(image) {
     var lightboxImg = lightbox.querySelector('.lightbox-img');
     lightboxImg.src = getFullSizeUrl(image.id);
     
+    // Preload adjacent images immediately
+    preloadAdjacentImages(currentLightboxIndex);
+    
     lightbox.classList.add('active');
     
     var closeBtn = lightbox.querySelector('.lightbox-close-btn');
@@ -496,12 +494,11 @@ function openLightbox(image) {
 }
 
 // ========================================
-// Display Images (Main Gallery Render)
+// Display Images (Batch Render)
 // ========================================
 function displayImages(images) {
     var gallery = document.getElementById('gallery');
     removeSkeleton();
-    gallery.innerHTML = '';
     
     if (images.length === 0) {
         gallery.innerHTML = '<div class="no-likes-message"><p>沒有照片</p></div>';
@@ -517,22 +514,72 @@ function displayImages(images) {
     }
     
     currentLightboxImages = displayOrder.slice();
+    gallery.innerHTML = '';
     
-    displayOrder.forEach(function(image) {
-        var item = createGalleryItem(image);
-        gallery.appendChild(item);
-    });
+    // Clear preload cache on re-render
+    lightboxPreloadCache.clear();
+    
+    // Batch render: only create first batch immediately
+    var FIRST_BATCH = 60;
+    var REMAINING_BATCH = 30;
+    
+    for (var i = 0; i < Math.min(FIRST_BATCH, displayOrder.length); i++) {
+        gallery.appendChild(createGalleryItem(displayOrder[i]));
+    }
+    
+    // Load more as user scrolls
+    if (displayOrder.length > FIRST_BATCH) {
+        loadMoreBatches(gallery, displayOrder, FIRST_BATCH, REMAINING_BATCH);
+    }
 }
 
+function loadMoreBatches(gallery, displayOrder, startIndex, batchSize) {
+    var galleryObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var sentinel = entry.target;
+                loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, galleryObserver);
+                galleryObserver.unobserve(sentinel);
+            }
+        });
+    }, { rootMargin: '400px' });
+    
+    // Create sentinel at end of current content
+    var sentinel = document.createElement('div');
+    sentinel.id = 'gallery-scroll-sentinel';
+    gallery.appendChild(sentinel);
+    galleryObserver.observe(sentinel);
+}
+
+function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, galleryObserver) {
+    var fragment = document.createDocumentFragment();
+    var end = Math.min(startIndex + batchSize, displayOrder.length);
+    
+    for (var i = startIndex; i < end; i++) {
+        fragment.appendChild(createGalleryItem(displayOrder[i]));
+    }
+    
+    gallery.insertBefore(fragment, sentinel);
+    
+    var nextStart = startIndex + batchSize;
+    if (nextStart < displayOrder.length) {
+        // Update sentinel position reference for next batch
+        loadMoreBatches(gallery, displayOrder, nextStart, batchSize);
+    } else {
+        // All loaded, remove sentinel
+        if (sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+    }
+    galleryObserver.disconnect();
+}
 
 // ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
+    initGlobalObserver();
     setupNavigation();
     loadImages();
     
-    // Floating new filter button (mobile)
     var floatingNewBtn = document.getElementById('floating-new-filter');
     if (floatingNewBtn) {
         floatingNewBtn.addEventListener('click', function() {
