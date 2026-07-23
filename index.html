@@ -4,9 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Light-Shadow Boundary</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260723a">
 </head>
-<body>
+<body class="site-loading">
+    <!-- First-visit loading screen: shown until the first gallery images are ready -->
+    <div class="site-loader" id="site-loader" role="status" aria-live="polite" aria-label="作品載入進度">
+        <div class="site-loader-content">
+            <p class="site-loader-kicker">PHOTOGRAPHY · YABU</p>
+            <p class="site-loader-title">The Light-Shadow<br>Boundary</p>
+            <div class="site-loader-status">
+                <span id="site-loader-message">正在連線至作品集</span>
+                <span id="site-loader-percent">0%</span>
+            </div>
+            <div class="site-loader-track" aria-hidden="true">
+                <span id="site-loader-bar"></span>
+            </div>
+            <p class="site-loader-detail" id="site-loader-detail">讓光影慢慢浮現</p>
+            <button class="site-loader-skip" id="site-loader-skip" type="button">先瀏覽網站</button>
+        </div>
+    </div>
+    <noscript>
+        <style>.site-loader { display: none !important; } body.site-loading { overflow: auto; }</style>
+    </noscript>
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-brand">The Light-Shadow Boundary</div>
@@ -70,7 +90,7 @@
         <p>&copy; 2026 The Light-Shadow Boundary. All rights reserved.</p>
     </footer>
 
-    <script src="script.js?v=20260407a"></script>
+    <script src="script.js?v=20260723a"></script>
 
     <!-- Floating NEW Filter Button (Mobile) -->
     <button class="floating-new-filter" id="floating-new-filter" title="只看新作品">

@@ -12,6 +12,72 @@ let allImages = [];
 let showOnlyNew = false;
 
 // ========================================
+// First-visit Loading Progress
+// ========================================
+let siteLoaderProgress = 0;
+let driveRequestCount = 0;
+let siteLoaderFinished = false;
+
+function updateSiteLoader(progress, message, detail) {
+    if (siteLoaderFinished) return;
+
+    siteLoaderProgress = Math.max(siteLoaderProgress, Math.min(100, Math.round(progress)));
+    var bar = document.getElementById('site-loader-bar');
+    var percent = document.getElementById('site-loader-percent');
+    var messageEl = document.getElementById('site-loader-message');
+    var detailEl = document.getElementById('site-loader-detail');
+    var loader = document.getElementById('site-loader');
+
+    if (bar) bar.style.width = siteLoaderProgress + '%';
+    if (percent) percent.textContent = siteLoaderProgress + '%';
+    if (message && messageEl) messageEl.textContent = message;
+    if (detail && detailEl) detailEl.textContent = detail;
+    if (loader) loader.setAttribute('aria-label', '作品載入進度 ' + siteLoaderProgress + '%');
+}
+
+function dismissSiteLoader() {
+    if (siteLoaderFinished) return;
+    siteLoaderFinished = true;
+
+    var loader = document.getElementById('site-loader');
+    document.body.classList.remove('site-loading');
+    if (loader) loader.classList.add('is-complete');
+}
+
+function finishSiteLoader() {
+    updateSiteLoader(100, '作品準備完成', '歡迎走進光影的交界處');
+    window.setTimeout(dismissSiteLoader, 480);
+}
+
+function noteDriveRequest() {
+    driveRequestCount++;
+    // The number of nested Drive folders is unknown, so metadata progress
+    // approaches 55% without pretending that we know the final request count.
+    var progress = 12 + 43 * (1 - Math.exp(-driveRequestCount / 4));
+    updateSiteLoader(progress, '正在整理作品索引', '已讀取 ' + driveRequestCount + ' 個作品區段');
+}
+
+function setupSiteLoader() {
+    updateSiteLoader(6, '正在連線至作品集', '讓光影慢慢浮現');
+
+    var skipButton = document.getElementById('site-loader-skip');
+    if (skipButton) {
+        skipButton.addEventListener('click', dismissSiteLoader);
+        window.setTimeout(function() {
+            if (!siteLoaderFinished) skipButton.classList.add('is-visible');
+        }, 8000);
+    }
+
+    // Never trap a visitor behind the loading screen if a third-party request stalls.
+    window.setTimeout(function() {
+        if (!siteLoaderFinished) {
+            updateSiteLoader(96, '網路回應較慢', '作品仍會在背景繼續載入');
+            if (skipButton) skipButton.classList.add('is-visible');
+        }
+    }, 12000);
+}
+
+// ========================================
 // Shared Global Intersection Observer
 // ========================================
 let globalObserver = null;
@@ -66,6 +132,7 @@ function loadImage(img, src) {
     tempImg.onload = function() {
         img.src = src;
         img.classList.add('loaded');
+        img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: true } }));
         currentlyLoading--;
         processImageQueue();
     };
@@ -73,6 +140,7 @@ function loadImage(img, src) {
         currentlyLoading--;
         processImageQueue();
         img.dataset.loaded = 'false'; // allow retry
+        img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: false } }));
         console.warn('Failed to load image:', src);
     };
     tempImg.src = src;
@@ -133,6 +201,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         }).join('&');
         
         var response = await fetch(filesUrl + '?' + queryString);
+        noteDriveRequest();
         if (!response.ok) {
             console.error('API 錯誤 ' + response.status + ':', response.statusStatusText);
             throw new Error('API returned ' + response.status);
@@ -177,6 +246,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         }).join('&');
         
         var foldersResponse = await fetch(foldersUrl + '?' + foldersQueryString);
+        noteDriveRequest();
         if (!foldersResponse.ok) break;
         
         var foldersData = await foldersResponse.json();
@@ -274,6 +344,7 @@ function setupNavigation() {
 // ========================================
 async function loadImages() {
     showSkeleton(18);
+    updateSiteLoader(10, '正在連線至作品集', '讀取 Google Drive 作品資料');
     
     try {
         allImages = [];
@@ -297,19 +368,58 @@ async function loadImages() {
             allImages = getDefaultImages();
         }
         
-        // Preload first few thumbnails immediately
-        allImages.slice(0, 12).forEach(function(img) {
-            var preloader = new Image();
-            preloader.src = getThumbnailUrl(img.id);
-        });
-        
+        updateSiteLoader(60, '作品索引已就緒', '找到 ' + allImages.length + ' 幅作品');
         displayImages(allImages);
+        await preloadInitialGalleryImages();
+        finishSiteLoader();
         
     } catch (error) {
         console.error('Error loading images:', error);
         var gallery = document.getElementById('gallery');
         gallery.innerHTML = '<div class="loading">載入失敗，請刷新重試。</div>';
+        updateSiteLoader(100, '暫時無法載入作品', '請先進入網站，稍後重新整理');
+        window.setTimeout(dismissSiteLoader, 900);
     }
+}
+
+function preloadInitialGalleryImages() {
+    var targetCount = window.matchMedia('(max-width: 768px)').matches ? 6 : 10;
+    var images = Array.prototype.slice.call(
+        document.querySelectorAll('#gallery .gallery-item img'),
+        0,
+        targetCount
+    );
+
+    if (images.length === 0) return Promise.resolve();
+
+    var settled = 0;
+    updateSiteLoader(64, '正在準備第一批照片', '0 / ' + images.length + ' 幅作品');
+
+    return Promise.all(images.map(function(img) {
+        return new Promise(function(resolve) {
+            var done = false;
+            var timeoutId;
+
+            function settle() {
+                if (done) return;
+                done = true;
+                window.clearTimeout(timeoutId);
+                settled++;
+                var progress = 64 + (settled / images.length) * 32;
+                updateSiteLoader(progress, '正在準備第一批照片', settled + ' / ' + images.length + ' 幅作品');
+                resolve();
+            }
+
+            if (img.classList.contains('loaded')) {
+                settle();
+                return;
+            }
+
+            img.addEventListener('gallery-image-settled', settle, { once: true });
+            timeoutId = window.setTimeout(settle, 10000);
+            enqueueImageLoad(img, img.dataset.src);
+        });
+    }));
 }
 
 function getDefaultImages() {
@@ -576,6 +686,7 @@ function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, g
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
+    setupSiteLoader();
     initGlobalObserver();
     setupNavigation();
     loadImages();
