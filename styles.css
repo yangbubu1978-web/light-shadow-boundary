@@ -378,13 +378,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .hero-title-line--1 { animation-delay: 0.4s; }
 .hero-title-line--2 { animation-delay: 0.55s; }
-.hero-title-line--3 { animation-delay: 0.7s; }
 
 .hero-description {
     font-size: clamp(13px, 1.5vw, 15px);
-    line-height: 2;
+    line-height: 2.1;
     color: var(--color-text-on-dark-secondary);
-    max-width: 360px;
+    max-width: 420px;
     opacity: 0;
     transform: translateY(12px);
     animation: heroFadeUp 0.8s var(--ease-out) 0.9s forwards;

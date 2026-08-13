@@ -1,5 +1,5 @@
 // ========================================
-// The Light-Shadow Boundary - Gallery Script
+// Fragments of Light - Gallery Script
 // (Optimized: Batch rendering + Lightbox preload + Shared observer)
 // ========================================
 
