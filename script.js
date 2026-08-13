@@ -355,7 +355,7 @@ function setupHeroImage() {
 // ========================================
 // Standalone Page Images (about / contact)
 // ========================================
-function setupPageImages() {
+async function setupPageImages() {
     // Find all decorative images on this page
     var targets = [];
     var portrait = document.getElementById('about-portrait');
@@ -370,8 +370,23 @@ function setupPageImages() {
     
     if (targets.length === 0) return;
     
-    // Use default images if no gallery data is loaded yet
-    var pool = (allImages && allImages.length) ? allImages : getDefaultImages();
+    // Fetch images from Drive if not already loaded (standalone pages skip gallery)
+    if (!allImages || !allImages.length) {
+        try {
+            allImages = await fetchImagesFromDrive();
+        } catch (e) {
+            console.error('Drive fetch failed for page images:', e.message);
+        }
+    }
+    
+    // Prefer NEW images (uploaded within 30 days); fall back to all images
+    var pool;
+    if (allImages && allImages.length) {
+        var newImages = filterNew(allImages);
+        pool = newImages.length ? newImages : allImages;
+    } else {
+        pool = getDefaultImages();
+    }
     var shuffled = shuffleArray(pool);
     
     // Assign distinct images to each target
