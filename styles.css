@@ -599,21 +599,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     color: rgba(255,255,255,0.85);
 }
 
-/* NEW Badge — refined */
+/* NEW Badge — always visible, refined style */
 .gallery-item .new-badge {
     position: absolute; top: 12px; left: 12px;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.5);
-    color: rgba(255,255,255,0.8);
-    font-size: 9px; font-weight: 500;
+    background: rgba(255,255,255,0.95);
+    color: var(--color-text);
+    font-size: 9px; font-weight: 600;
     letter-spacing: 0.2em; text-transform: uppercase;
-    padding: 3px 8px;
+    padding: 4px 10px;
     z-index: 5; pointer-events: none;
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
-
-.gallery-item:hover .new-badge { opacity: 1; }
 
 /* Gallery responsive */
 @media (max-width: 1024px) {

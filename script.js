@@ -413,18 +413,22 @@ function setupMobileMenu() {
 // ========================================
 // Gallery Item Reveal Animation
 // ========================================
+var revealObserver = null;
+
 function setupGalleryReveal() {
-    var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.1, rootMargin: '50px' });
+    if (!revealObserver) {
+        revealObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.05, rootMargin: '80px' });
+    }
     
-    document.querySelectorAll('.gallery-item').forEach(function(item) {
-        observer.observe(item);
+    document.querySelectorAll('.gallery-item:not(.is-visible)').forEach(function(item) {
+        revealObserver.observe(item);
     });
 }
 
@@ -531,17 +535,19 @@ function preloadInitialGalleryImages() {
 }
 
 function getDefaultImages() {
+    // 加上 createdTime 讓 NEW badge 可以正常顯示
+    const now = new Date().toISOString();
     return [
-        { id: '1YlU4y2WyzMdsuW6tR1Luo42ccVAuAt_H', name: '000089000007_48125894547_o.jpg' },
-        { id: '12EJ1r5U7HgC4M-h0l8VmYhlIDEfhwzWt', name: '000089000006_48113653578_o.jpg' },
-        { id: '1XgHcLkjLJM5AX2StJNicnjNqbEcI-2eP', name: '000089000005_48119883216_o.jpg' },
-        { id: '1RlkPOKC5aaU1P4n2p25zqlbt9NNnOy5r', name: '000016650030_48102725516_o.jpg' },
-        { id: '1hlldRFbTeAuybLzYrnMbBHKMacEORVLR', name: '000016650025_48097388867_o.jpg' },
-        { id: '1oKF3f0M5lmpWFD9DGOtVAr_t1rcjpjJZ', name: '000016650027_48092987466_o.jpg' },
-        { id: '1iJpP4J5C1QswEHH9YGeA3FUDYKa7ncwm', name: '000016650033_48049127462_o.jpg' },
-        { id: '1OSBhks_-DrslKJ8SHuqFZILMxGx5aZH-', name: '000016650034_48055175693_o.jpg' },
-        { id: '1rCxSrTLve-UzKATTl3qoD9MUesiv07d0', name: 'cnv000014_48024174878_o.jpg' },
-        { id: '1guMq7L9OfXCogwVYWDIW39XBhgT970jl', name: 'cnv000010_48036529803_o.jpg' }
+        { id: '1YlU4y2WyzMdsuW6tR1Luo42ccVAuAt_H', name: '000089000007_48125894547_o.jpg', createdTime: now },
+        { id: '12EJ1r5U7HgC4M-h0l8VmYhlIDEfhwzWt', name: '000089000006_48113653578_o.jpg', createdTime: now },
+        { id: '1XgHcLkjLJM5AX2StJNicnjNqbEcI-2eP', name: '000089000005_48119883216_o.jpg', createdTime: now },
+        { id: '1RlkPOKC5aaU1P4n2p25zqlbt9NNnOy5r', name: '000016650030_48102725516_o.jpg', createdTime: now },
+        { id: '1hlldRFbTeAuybLzYrnMbBHKMacEORVLR', name: '000016650025_48097388867_o.jpg', createdTime: now },
+        { id: '1oKF3f0M5lmpWFD9DGOtVAr_t1rcjpjJZ', name: '000016650027_48092987466_o.jpg', createdTime: now },
+        { id: '1iJpP4J5C1QswEHH9YGeA3FUDYKa7ncwm', name: '000016650033_48049127462_o.jpg', createdTime: now },
+        { id: '1OSBhks_-DrslKJ8SHuqFZILMxGx5aZH-', name: '000016650034_48055175693_o.jpg', createdTime: now },
+        { id: '1rCxSrTLve-UzKATTl3qoD9MUesiv07d0', name: 'cnv000014_48024174878_o.jpg', createdTime: now },
+        { id: '1guMq7L9OfXCogwVYWDIW39XBhgT970jl', name: 'cnv000010_48036529803_o.jpg', createdTime: now }
     ];
 }
 
@@ -799,6 +805,9 @@ function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, g
     }
     
     gallery.insertBefore(fragment, sentinel);
+    
+    // Setup reveal animation for newly added items
+    setupGalleryReveal();
     
     var nextStart = startIndex + batchSize;
     if (nextStart < displayOrder.length) {
