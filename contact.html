@@ -14,7 +14,7 @@
     <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260813c">
+    <link rel="stylesheet" href="styles.css?v=20260813d">
 </head>
 <body class="page-body">
 
@@ -46,39 +46,57 @@
         </div>
     </div>
 
-    <!-- Contact Hero -->
-    <header class="page-hero page-hero--contact">
-        <div class="page-hero-inner">
-            <p class="hero-eyebrow">
-                <span class="hero-eyebrow-line"></span>
-                <span>Contact</span>
-            </p>
-            <h1 class="page-hero-title">Let's talk.</h1>
-            <p class="page-hero-quote">
-                For collaborations, prints,<br>
-                or conversations about the work.
-            </p>
+    <!-- Contact Hero — split layout with photo -->
+    <header class="contact-hero">
+        <div class="contact-hero-grid">
+            <div class="contact-hero-text">
+                <p class="hero-eyebrow">
+                    <span class="hero-eyebrow-line"></span>
+                    <span>Contact</span>
+                </p>
+                <h1 class="contact-hero-title">Let's<br>talk.</h1>
+                <p class="contact-hero-quote">
+                    For collaborations, prints,<br>
+                    or conversations about the work.
+                </p>
+            </div>
+            <div class="contact-hero-image">
+                <div class="contact-hero-frame">
+                    <img id="contact-image" alt="Photograph" loading="eager">
+                    <div class="contact-hero-caption">
+                        <span>A Fragment of Light</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- Contact Body -->
+    <!-- Contact Details -->
     <section class="contact-page">
         <div class="contact-page-inner">
-            <div class="contact-page-block">
-                <p class="about-meta-label">Email</p>
-                <a href="mailto:yabu.san@gmail.com" class="contact-email">yabu.san@gmail.com</a>
-                <p class="contact-page-hint">For all enquiries — usually replies within a few days.</p>
+            <div class="contact-page-row">
+                <div class="contact-page-block">
+                    <p class="about-meta-label">Email</p>
+                    <a href="mailto:yabu.san@gmail.com" class="contact-email">yabu.san@gmail.com</a>
+                    <p class="contact-page-hint">For all enquiries — usually replies within a few days.</p>
+                </div>
+                <div class="contact-page-block">
+                    <p class="about-meta-label">Based in</p>
+                    <p class="contact-page-location">Keelung, Taiwan</p>
+                </div>
             </div>
-            <div class="contact-page-block">
-                <p class="about-meta-label">Based in</p>
-                <p class="contact-page-location">Keelung, Taiwan</p>
-            </div>
-            <div class="contact-page-block">
-                <p class="about-meta-label">Follow</p>
-                <div class="contact-page-links">
-                    <a href="https://www.threads.net/@yabu.0724" target="_blank" rel="noopener">Threads</a>
-                    <span class="contact-page-sep">·</span>
-                    <a href="https://www.facebook.com/profile.php?id=61572955641614" target="_blank" rel="noopener">Facebook</a>
+            <div class="contact-page-row">
+                <div class="contact-page-block">
+                    <p class="about-meta-label">Follow</p>
+                    <div class="contact-page-links">
+                        <a href="https://www.threads.net/@yabu.0724" target="_blank" rel="noopener">Threads</a>
+                        <span class="contact-page-sep">·</span>
+                        <a href="https://www.facebook.com/profile.php?id=61572955641614" target="_blank" rel="noopener">Facebook</a>
+                    </div>
+                </div>
+                <div class="contact-page-block contact-page-block--empty">
+                    <p class="about-meta-label">Currently</p>
+                    <p class="contact-page-location">Open for commissions</p>
                 </div>
             </div>
             <p class="contact-page-poem">
@@ -104,6 +122,6 @@
         </div>
     </footer>
 
-    <script src="script.js?v=20260813c"></script>
+    <script src="script.js?v=20260813d"></script>
 </body>
 </html>

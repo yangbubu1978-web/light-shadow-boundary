@@ -353,6 +353,43 @@ function setupHeroImage() {
 }
 
 // ========================================
+// Standalone Page Images (about / contact)
+// ========================================
+function setupPageImages() {
+    // Find all decorative images on this page
+    var targets = [];
+    var portrait = document.getElementById('about-portrait');
+    var contactImg = document.getElementById('contact-image');
+    var img1 = document.getElementById('about-image-1');
+    var img2 = document.getElementById('about-image-2');
+    
+    if (portrait) targets.push(portrait);
+    if (contactImg) targets.push(contactImg);
+    if (img1) targets.push(img1);
+    if (img2) targets.push(img2);
+    
+    if (targets.length === 0) return;
+    
+    // Use default images if no gallery data is loaded yet
+    var pool = (allImages && allImages.length) ? allImages : getDefaultImages();
+    var shuffled = shuffleArray(pool);
+    
+    // Assign distinct images to each target
+    targets.forEach(function(target, index) {
+        if (!shuffled[index]) return;
+        var img = shuffled[index];
+        var url = getThumbnailUrl(img.id).replace('=w400', '=w1200');
+        var temp = new Image();
+        temp.onload = function() {
+            target.src = url;
+            target.alt = img.name;
+            target.classList.add('loaded');
+        };
+        temp.src = url;
+    });
+}
+
+// ========================================
 // Navigation — Scroll Detection
 // ========================================
 function setupNavigationScroll() {
@@ -459,6 +496,8 @@ async function loadImages() {
         if (document.getElementById('site-loader')) {
             finishSiteLoader();
         }
+        // Load decorative images for standalone pages
+        setupPageImages();
         return;
     }
     

@@ -14,7 +14,7 @@
     <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260813c">
+    <link rel="stylesheet" href="styles.css?v=20260813d">
 </head>
 <body class="page-body">
 
@@ -46,18 +46,28 @@
         </div>
     </div>
 
-    <!-- About Hero -->
-    <header class="page-hero">
-        <div class="page-hero-inner">
-            <p class="hero-eyebrow">
-                <span class="hero-eyebrow-line"></span>
-                <span>About the Photographer</span>
-            </p>
-            <h1 class="page-hero-title">街頭、人像，<br>路過的貓。</h1>
-            <p class="page-hero-quote">
-                在光所經過的地方，<br>
-                記錄那些短暫而真實的片刻。
-            </p>
+    <!-- About Hero — Editorial, with portrait photo -->
+    <header class="about-hero">
+        <div class="about-hero-grid">
+            <div class="about-hero-text">
+                <p class="hero-eyebrow">
+                    <span class="hero-eyebrow-line"></span>
+                    <span>About the Photographer</span>
+                </p>
+                <h1 class="about-hero-title">
+                    <span class="hero-title-line hero-title-line--1">街頭、人像，</span>
+                    <span class="hero-title-line hero-title-line--2">路過的貓。</span>
+                </h1>
+                <p class="about-hero-quote">
+                    在光所經過的地方，記錄那些短暫而真實的片刻。
+                </p>
+                <p class="about-hero-signature">— 雅布</p>
+            </div>
+            <div class="about-hero-image">
+                <div class="about-hero-frame">
+                    <img id="about-portrait" alt="Portrait of the photographer" loading="eager">
+                </div>
+            </div>
         </div>
     </header>
 
@@ -66,11 +76,14 @@
         <div class="about-story-grid">
             <div class="about-story-meta">
                 <p class="about-meta-label">The Photographer</p>
-                <p class="about-story-name">雅布 · Yabu</p>
+                <p class="about-story-name">雅布<br>Yabu</p>
                 <div class="about-story-facts">
                     <p>Based in Keelung, Taiwan</p>
                     <p>Shooting since 2004</p>
                     <p>Street · Portrait · Stray Cats</p>
+                </div>
+                <div class="about-story-quote">
+                    「沒什麼大道理，<br>只想按下快門。」
                 </div>
             </div>
             <div class="about-story-text">
@@ -84,14 +97,33 @@
                 <p>
                     我是雅布。透過鏡頭，我在日常與邊緣之間尋找那些容易被遺忘的片刻——一扇被光穿透的窗、一個轉身的背影、牆上移動的影子。
                 </p>
-                <p class="about-story-poem">
-                    有些風景終將消失，<br>
-                    有些記憶也會逐漸模糊。<br><br>
-                    而我想留下的，<br>
-                    只是光曾經存在過的證明。
+                <p>
+                    這些照片不是答案，只是問題的另一種形式。
                 </p>
-                <p class="about-story-signature">— 雅布</p>
+                <!-- Secondary image row -->
+                <div class="about-story-images">
+                    <div class="about-story-image about-story-image--tall">
+                        <img id="about-image-1" alt="Photograph" loading="lazy">
+                    </div>
+                    <div class="about-story-image about-story-image--wide">
+                        <img id="about-image-2" alt="Photograph" loading="lazy">
+                    </div>
+                </div>
             </div>
+        </div>
+    </section>
+
+    <!-- About Poem — full-width centered -->
+    <section class="about-poem-section">
+        <div class="about-poem-inner">
+            <span class="about-poem-mark">✦</span>
+            <p class="about-poem">
+                有些風景終將消失，<br>
+                有些記憶也會逐漸模糊。<br><br>
+                而我想留下的，<br>
+                只是光曾經存在過的證明。
+            </p>
+            <p class="about-poem-signature">— 雅布</p>
         </div>
     </section>
 
@@ -109,6 +141,6 @@
         </div>
     </footer>
 
-    <script src="script.js?v=20260813c"></script>
+    <script src="script.js?v=20260813d"></script>
 </body>
 </html>

@@ -841,35 +841,103 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     color: var(--color-text);
 }
 
-/* Page Hero — shorter than home hero */
-.page-hero {
-    padding: calc(var(--nav-height) + var(--space-4xl)) var(--content-padding) var(--space-4xl);
+/* ============================================================
+   ABOUT HERO — split text + portrait, dark editorial
+   ============================================================ */
+.about-hero {
     background: var(--color-bg-dark);
     color: var(--color-text-on-dark);
+    padding: calc(var(--nav-height) + var(--space-4xl)) var(--content-padding) var(--space-5xl);
+    min-height: 92vh;
+    min-height: 92dvh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
 }
 
-.page-hero-inner {
+.about-hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(40px, 6vw, 96px);
+    align-items: center;
+    width: 100%;
     max-width: var(--max-width);
     margin: 0 auto;
 }
 
-.page-hero-title {
+.about-hero-title {
     font-family: var(--font-display);
-    font-size: clamp(40px, 6vw, 72px);
+    font-size: clamp(40px, 6.5vw, 84px);
     font-weight: 300;
     line-height: 1.15;
-    margin: var(--space-lg) 0 var(--space-lg);
     letter-spacing: -0.01em;
+    margin: var(--space-xl) 0;
 }
 
-.page-hero-quote {
-    font-size: clamp(14px, 1.6vw, 17px);
+.about-hero-title .hero-title-line {
+    display: block;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(100%);
+    animation: heroLineReveal 1s var(--ease-out) forwards;
+}
+
+.about-hero-title .hero-title-line--1 { animation-delay: 0.4s; }
+.about-hero-title .hero-title-line--2 { animation-delay: 0.55s; }
+
+.about-hero-quote {
+    font-size: clamp(14px, 1.5vw, 16px);
     line-height: 2;
     color: var(--color-text-on-dark-secondary);
-    max-width: 480px;
+    max-width: 420px;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: heroFadeUp 0.8s var(--ease-out) 0.8s forwards;
 }
 
-/* About Story */
+.about-hero-signature {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--color-text-on-dark-secondary);
+    margin-top: var(--space-lg);
+    opacity: 0;
+    animation: heroFadeUp 0.8s var(--ease-out) 1s forwards;
+}
+
+.about-hero-image {
+    opacity: 0;
+    transform: scale(0.96);
+    animation: heroImageReveal 1.2s var(--ease-out) 0.5s forwards;
+}
+
+.about-hero-frame {
+    aspect-ratio: 3 / 4;
+    background: var(--color-bg-dark-alt);
+    overflow: hidden;
+    position: relative;
+}
+
+.about-hero-frame::after {
+    content: '';
+    position: absolute; inset: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+}
+
+.about-hero-frame img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s var(--ease-out);
+}
+
+.about-hero-frame img.loaded { opacity: 1; }
+
+/* ============================================================
+   ABOUT STORY — editorial two-column with images
+   ============================================================ */
 .about-story {
     padding: var(--space-5xl) var(--content-padding);
     background: var(--color-bg);
@@ -878,21 +946,24 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .about-story-grid {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: clamp(32px, 6vw, 120px);
+    gap: clamp(40px, 7vw, 140px);
     max-width: var(--max-width);
     margin: 0 auto;
 }
 
 .about-story-meta {
-    display: flex; flex-direction: column; gap: var(--space-lg);
+    display: flex; flex-direction: column; gap: var(--space-xl);
     align-items: flex-start;
+    position: sticky;
+    top: calc(var(--nav-height) + var(--space-xl));
+    align-self: start;
 }
 
 .about-story-name {
     font-family: var(--font-display);
-    font-size: clamp(24px, 3vw, 32px);
+    font-size: clamp(28px, 3.5vw, 40px);
     font-weight: 300;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .about-story-facts {
@@ -901,51 +972,200 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-text-tertiary);
-    padding-top: var(--space-md);
+    padding-top: var(--space-lg);
     border-top: 1px solid var(--color-border-light);
     width: 100%;
+}
+
+.about-story-quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(17px, 1.8vw, 20px);
+    line-height: 1.8;
+    color: var(--color-text-secondary);
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-lg);
+    margin-top: var(--space-md);
 }
 
 .about-story-text p {
     font-size: 15px;
     line-height: 2;
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-xl);
     max-width: 560px;
 }
 
 .about-story-text .about-story-lead {
-    font-size: clamp(17px, 2vw, 20px);
+    font-size: clamp(17px, 2vw, 21px);
     line-height: 1.9;
     color: var(--color-text);
 }
 
-.about-story-poem {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: clamp(18px, 2.2vw, 22px);
-    line-height: 2;
-    color: var(--color-text);
-    margin: var(--space-2xl) 0;
+/* Image pair inside story */
+.about-story-images {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: var(--space-md);
+    margin-top: var(--space-2xl);
 }
 
-.about-story-signature {
+.about-story-image {
+    overflow: hidden;
+    background: var(--color-bg-alt);
+}
+
+.about-story-image--tall { aspect-ratio: 3 / 4; }
+.about-story-image--wide { aspect-ratio: 4 / 3; align-self: center; }
+
+.about-story-image img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1.03);
+    transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
+}
+
+.about-story-image img.loaded {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ============================================================
+   ABOUT POEM — dark full-width closing section
+   ============================================================ */
+.about-poem-section {
+    background: var(--color-bg-dark);
+    color: var(--color-text-on-dark);
+    padding: var(--space-5xl) var(--content-padding);
+}
+
+.about-poem-inner {
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.about-poem-mark {
+    display: block;
+    margin-bottom: var(--space-2xl);
+    font-size: 14px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.3em;
+}
+
+.about-poem {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(20px, 2.8vw, 30px);
+    font-weight: 300;
+    line-height: 2.1;
+    color: var(--color-text-on-dark);
+}
+
+.about-poem-signature {
     font-family: var(--font-display);
     font-style: italic;
     font-size: 16px;
-    color: var(--color-text-tertiary);
+    color: var(--color-text-on-dark-secondary);
+    margin-top: var(--space-2xl);
 }
 
-/* Contact Page */
+/* ============================================================
+   CONTACT HERO — split layout with photo
+   ============================================================ */
+.contact-hero {
+    background: var(--color-bg-dark);
+    color: var(--color-text-on-dark);
+    padding: calc(var(--nav-height) + var(--space-4xl)) var(--content-padding) var(--space-5xl);
+    min-height: 92vh;
+    min-height: 92dvh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.contact-hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(40px, 6vw, 96px);
+    align-items: center;
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+}
+
+.contact-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 8vw, 110px);
+    font-weight: 300;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: var(--space-xl) 0;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: heroFadeUp 1s var(--ease-out) 0.4s forwards;
+}
+
+.contact-hero-quote {
+    font-size: clamp(14px, 1.5vw, 16px);
+    line-height: 2;
+    color: var(--color-text-on-dark-secondary);
+    max-width: 420px;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: heroFadeUp 0.8s var(--ease-out) 0.8s forwards;
+}
+
+.contact-hero-image {
+    opacity: 0;
+    transform: scale(0.96);
+    animation: heroImageReveal 1.2s var(--ease-out) 0.5s forwards;
+}
+
+.contact-hero-frame {
+    aspect-ratio: 4 / 5;
+    background: var(--color-bg-dark-alt);
+    overflow: hidden;
+    position: relative;
+}
+
+.contact-hero-frame img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s var(--ease-out);
+}
+
+.contact-hero-frame img.loaded { opacity: 1; }
+
+.contact-hero-caption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: var(--space-md) var(--space-lg);
+    background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+}
+
+/* Contact Page — details */
 .contact-page {
     padding: var(--space-5xl) var(--content-padding);
     background: var(--color-bg);
 }
 
 .contact-page-inner {
-    max-width: 720px;
+    max-width: 900px;
     margin: 0 auto;
     display: flex; flex-direction: column; gap: var(--space-3xl);
+}
+
+.contact-page-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3xl);
 }
 
 .contact-page-block {
@@ -956,8 +1176,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .contact-page-location {
     font-family: var(--font-display);
-    font-size: clamp(20px, 2.5vw, 28px);
+    font-size: clamp(22px, 2.5vw, 30px);
     font-weight: 300;
+    line-height: 1.3;
 }
 
 .contact-page-hint {
@@ -990,18 +1211,38 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .contact-page-poem {
     font-family: var(--font-display);
     font-style: italic;
-    font-size: clamp(17px, 2vw, 20px);
+    font-size: clamp(18px, 2vw, 22px);
     line-height: 2;
     color: var(--color-text-secondary);
     text-align: center;
     margin-top: var(--space-xl);
 }
 
-@media (max-width: 768px) {
-    .about-story { padding: var(--space-3xl) 20px; }
+@media (max-width: 900px) {
+    .about-hero, .contact-hero {
+        padding-top: calc(var(--nav-height) + var(--space-3xl));
+        padding-bottom: var(--space-3xl);
+        min-height: auto;
+    }
+    .about-hero-grid, .contact-hero-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-2xl);
+    }
+    .about-hero-image { order: 2; }
+    .contact-hero-image { order: 2; }
+    .about-hero-frame { aspect-ratio: 4 / 3; max-width: 480px; }
+    .contact-hero-frame { aspect-ratio: 4 / 3; max-width: 480px; }
     .about-story-grid { grid-template-columns: 1fr; gap: var(--space-2xl); }
+    .about-story-meta { position: static; }
+    .contact-page-row { grid-template-columns: 1fr; gap: var(--space-xl); }
+}
+
+@media (max-width: 640px) {
+    .about-story { padding: var(--space-3xl) 20px; }
     .contact-page { padding: var(--space-3xl) 20px; }
-    .page-hero { padding: calc(var(--nav-height) + var(--space-3xl)) 20px var(--space-3xl); }
+    .about-hero, .contact-hero { padding-left: 20px; padding-right: 20px; }
+    .about-story-images { grid-template-columns: 1fr; }
+    .about-story-image--wide { aspect-ratio: 4 / 3; }
 }
 
 /* ============================================================
