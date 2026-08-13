@@ -454,6 +454,14 @@ function setupNavigation() {
 // Load Images
 // ========================================
 async function loadImages() {
+    // Skip on pages without a gallery (e.g. about.html, contact.html)
+    if (!document.getElementById('gallery')) {
+        if (document.getElementById('site-loader')) {
+            finishSiteLoader();
+        }
+        return;
+    }
+    
     showSkeleton(18);
     updateSiteLoader(10, '正在連線至作品集', '讀取 Google Drive 作品資料');
     
