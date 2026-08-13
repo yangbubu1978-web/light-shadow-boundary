@@ -4,7 +4,7 @@
 // ========================================
 
 // Google Drive API Configuration
-const GOOGLE_DRIVE_API_KEY='«redacted:AIza…»';
+const GOOGLE_DRIVE_API_KEY='AIzaSyAJLrXNPtsvghA3ApipFmyi3YXZvubweuw';
 const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
 
 // Image list
