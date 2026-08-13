@@ -521,19 +521,43 @@ async function loadImages() {
     
     try {
         allImages = [];
+        // 先試 localStorage 快取（30 分鐘內避免重複打 API）
+        var cached = null;
         try {
-            allImages = await fetchImagesFromDrive();
-            console.log('Google Drive API returned', allImages.length, 'images');
-        } catch (e) {
-            console.error('Google Drive API failed:', e.message);
-            try {
-                var response = await fetch('images.json');
-                if (response.ok) {
-                    var data = await response.json();
-                    allImages = data.images || [];
+            var cacheRaw = localStorage.getItem('fol-images-cache');
+            if (cacheRaw) {
+                var cacheData = JSON.parse(cacheRaw);
+                if (cacheData && cacheData.timestamp && (Date.now() - cacheData.timestamp) < 30 * 60 * 1000 && cacheData.images && cacheData.images.length) {
+                    cached = cacheData.images;
+                    console.log('使用快取照片清單 (' + cached.length + ' 張)');
                 }
-            } catch (e2) {
-                allImages = getDefaultImages();
+            }
+        } catch (e) { /* ignore cache errors */ }
+        
+        if (cached) {
+            allImages = cached;
+        } else {
+            try {
+                allImages = await fetchImagesFromDrive();
+                console.log('Google Drive API returned', allImages.length, 'images');
+                // 寫入快取
+                try {
+                    localStorage.setItem('fol-images-cache', JSON.stringify({
+                        timestamp: Date.now(),
+                        images: allImages
+                    }));
+                } catch (e) { /* storage full — ignore */ }
+            } catch (e) {
+                console.error('Google Drive API failed:', e.message);
+                try {
+                    var response = await fetch('images.json');
+                    if (response.ok) {
+                        var data = await response.json();
+                        allImages = data.images || [];
+                    }
+                } catch (e2) {
+                    allImages = getDefaultImages();
+                }
             }
         }
         
@@ -544,8 +568,10 @@ async function loadImages() {
         updateSiteLoader(60, '作品索引已就緒', '找到 ' + allImages.length + ' 幅作品');
         displayImages(allImages);
         setupHeroImage();
-        await preloadInitialGalleryImages();
+        // 先放行網站（skeleton 佔位已就緒），照片在背景繼續載入
         finishSiteLoader();
+        // 背景預載首批照片，不阻塞畫面
+        preloadInitialGalleryImages().catch(function() {});
         
     } catch (error) {
         console.error('Error loading images:', error);
