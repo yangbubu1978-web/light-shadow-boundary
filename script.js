@@ -338,9 +338,9 @@ function setupHeroImage() {
     var heroImg = document.getElementById('hero-featured-image');
     if (!heroImg || !allImages.length) return;
     
-    // Pick a random image for the hero
-    var randomIndex = Math.floor(Math.random() * Math.min(10, allImages.length));
-    var featuredImage = allImages[randomIndex];
+    // Pick a random image from ALL photos (not just the first 10)
+    var shuffled = shuffleArray(allImages);
+    var featuredImage = shuffled[Math.floor(Math.random() * shuffled.length)];
     var url = getThumbnailUrl(featuredImage.id).replace('=w900', '=w1200');
     
     var tempImg = new Image();
