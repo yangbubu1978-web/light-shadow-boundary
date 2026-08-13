@@ -83,7 +83,7 @@ function setupSiteLoader() {
 let globalObserver = null;
 let imageLoadQueue = [];
 let currentlyLoading = 0;
-const MAX_CONCURRENT_LOADS = 6;  // Increased for better parallelism
+const MAX_CONCURRENT_LOADS = 8;  // Parallel loading for faster first paint
 
 function initGlobalObserver() {
     if (globalObserver) return;
@@ -99,7 +99,7 @@ function initGlobalObserver() {
             }
         });
     }, {
-        rootMargin: '200px'  // Preload 200px before viewport
+        rootMargin: '600px 0px 600px 0px'  // Preload well before viewport
     });
 }
 
@@ -341,7 +341,7 @@ function setupHeroImage() {
     // Pick a random image for the hero
     var randomIndex = Math.floor(Math.random() * Math.min(10, allImages.length));
     var featuredImage = allImages[randomIndex];
-    var url = getThumbnailUrl(featuredImage.id).replace('=w400', '=w1200');
+    var url = getThumbnailUrl(featuredImage.id).replace('=w900', '=w1200');
     
     var tempImg = new Image();
     tempImg.onload = function() {
@@ -393,7 +393,7 @@ async function setupPageImages() {
     targets.forEach(function(target, index) {
         if (!shuffled[index]) return;
         var img = shuffled[index];
-        var url = getThumbnailUrl(img.id).replace('=w400', '=w1200');
+        var url = getThumbnailUrl(img.id).replace('=w900', '=w1200');
         var temp = new Image();
         temp.onload = function() {
             target.src = url;
@@ -617,13 +617,13 @@ function getDefaultImages() {
 // URL Helpers
 // ========================================
 function getThumbnailUrl(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w400';
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w900';
 }
 
-// 響應式縮圖：400w 給手機 / 800w 給 retina 與平板 / 1600w 給桌面大螢幕
+// 響應式縮圖：600w 給手機 / 900w 給 retina 與平板 / 1600w 給桌面大螢幕
 function getThumbnailSrcset(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w400 400w,' +
-           'https://lh3.googleusercontent.com/d/' + fileId + '=w800 800w,' +
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w600 600w,' +
+           'https://lh3.googleusercontent.com/d/' + fileId + '=w900 900w,' +
            'https://lh3.googleusercontent.com/d/' + fileId + '=w1600 1600w';
 }
 
@@ -824,8 +824,9 @@ function displayImages(images) {
     lightboxPreloadCache.clear();
     
     // Batch render: only create first batch immediately
-    var FIRST_BATCH = 60;
-    var REMAINING_BATCH = 30;
+    // 首批 24 張：3 欄 × 8 排，足以填滿首屏；其餘按滾動分批載入
+    var FIRST_BATCH = 24;
+    var REMAINING_BATCH = 24;
     
     for (var i = 0; i < Math.min(FIRST_BATCH, displayOrder.length); i++) {
         gallery.appendChild(createGalleryItem(displayOrder[i]));
