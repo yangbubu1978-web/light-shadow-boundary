@@ -131,6 +131,10 @@ function loadImage(img, src) {
     const tempImg = new Image();
     tempImg.onload = function() {
         img.src = src;
+        // 一併套用響應式 srcset，瀏覽器會依裝置像素密度選擇最佳縮圖
+        if (img.dataset.srcset) {
+            img.srcset = img.dataset.srcset;
+        }
         img.classList.add('loaded');
         img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: true } }));
         currentlyLoading--;
@@ -444,8 +448,16 @@ function getThumbnailUrl(fileId) {
     return 'https://lh3.googleusercontent.com/d/' + fileId + '=w400';
 }
 
+// 響應式縮圖：400w 給手機 / 800w 給 retina 與平板 / 1600w 給桌面大螢幕
+function getThumbnailSrcset(fileId) {
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w400 400w,' +
+           'https://lh3.googleusercontent.com/d/' + fileId + '=w800 800w,' +
+           'https://lh3.googleusercontent.com/d/' + fileId + '=w1600 1600w';
+}
+
 function getFullSizeUrl(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId;
+    // 加上尺寸上限，避免手機原圖（可能 4000px+ / 10MB+）拖垮 Lightbox 載入
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w1920';
 }
 
 // ========================================
@@ -492,8 +504,12 @@ function createGalleryItem(image) {
     
     var img = document.createElement('img');
     img.dataset.src = getThumbnailUrl(image.id);
+    img.dataset.srcset = getThumbnailSrcset(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
     img.alt = image.name;
+    // sizes: 依欄寬選擇合適的縮圖（3 欄 masonry，最大欄寬約 450px）
+    img.sizes = '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw';
+    img.decoding = 'async';
     
     img.onload = function() {
         img.classList.add('loaded');
@@ -575,7 +591,7 @@ function openLightbox(image) {
         '</svg>' +
         '</button>' +
         '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
-        '<img src="" alt="' + image.name + '" class="lightbox-img">';
+        '<img src="" alt="' + image.name + '" class="lightbox-img" decoding="async">';
     
     var lightboxImg = lightbox.querySelector('.lightbox-img');
     lightboxImg.src = getFullSizeUrl(image.id);
