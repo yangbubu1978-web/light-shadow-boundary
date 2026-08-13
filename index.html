@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Light-Shadow Boundary</title>
-    <!-- Preconnect: 預先連線圖片與 API 主機，省下 TLS 握手時間 -->
+    <title>The Light-Shadow Boundary — Photography by Yabu</title>
+    <meta name="description" content="A contemporary photography portfolio exploring light, shadow, and the boundaries of memory.">
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
     <link rel="preconnect" href="https://www.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
     <link rel="dns-prefetch" href="https://www.googleapis.com">
-    <link rel="stylesheet" href="styles.css?v=20260813a">
+    <!-- Editorial Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20260813b">
 </head>
 <body class="site-loading">
-    <!-- First-visit loading screen: shown until the first gallery images are ready -->
+    <!-- First-visit loading screen -->
     <div class="site-loader" id="site-loader" role="status" aria-live="polite" aria-label="作品載入進度">
         <div class="site-loader-content">
             <p class="site-loader-kicker">PHOTOGRAPHY · YABU</p>
@@ -32,70 +39,136 @@
         <style>.site-loader { display: none !important; } body.site-loading { overflow: auto; }</style>
     </noscript>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-brand">The Light-Shadow Boundary</div>
+    <!-- Navigation — Minimal, Editorial -->
+    <nav class="navbar" id="navbar">
+        <a href="#home" class="nav-brand">
+            <span class="nav-brand-mark">LSB</span>
+            <span class="nav-brand-divider"></span>
+            <span class="nav-brand-name">The Light-Shadow Boundary</span>
+        </a>
         <div class="nav-links">
-            <a href="#home" class="active">HOME</a>
-            <a href="#portfolio">PORTFOLIO</a>
-            <a href="#about">ABOUT</a>
-            <a href="#contact">CONTACT</a>
-            <!-- 愛心＆NEW篩選按鈕會由 JavaScript 動態加入 -->
+            <a href="#portfolio">Works</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+            <!-- Filter buttons injected by JS -->
         </div>
+        <button class="nav-menu-toggle" id="nav-menu-toggle" aria-label="開啟選單" aria-expanded="false">
+            <span class="nav-menu-line"></span>
+            <span class="nav-menu-line"></span>
+        </button>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Mobile overlay menu -->
+    <div class="nav-mobile-menu" id="nav-mobile-menu" aria-hidden="true">
+        <div class="nav-mobile-menu-inner">
+            <a href="#home" class="nav-mobile-link">Home</a>
+            <a href="#portfolio" class="nav-mobile-link">Works</a>
+            <a href="#about" class="nav-mobile-link">About</a>
+            <a href="#contact" class="nav-mobile-link">Contact</a>
+        </div>
+    </div>
+
+    <!-- Hero Section — Editorial Photography Exhibition -->
     <header id="home" class="hero">
-        <div class="hero-content">
-            <h1>The Light-Shadow Boundary</h1>
-            <p class="hero-quote">「在光影的交界處紀錄，讓那些即將被時間忘卻的真實，留下記憶的輪廓。」</p>
-            <p class="about-quote">「街頭、人像，路過的貓。」</p>
-            <p class="about-text">
-                沒什麼大道理，只想在光影交界處按下快門，記錄下被時間忘卻的影像輪廓。我是雅布
-            </p>
+        <div class="hero-grid">
+            <!-- Left: Typography -->
+            <div class="hero-text">
+                <p class="hero-eyebrow">
+                    <span class="hero-eyebrow-line"></span>
+                    <span>Contemporary Photography · 2026</span>
+                </p>
+                <h1 class="hero-title">
+                    <span class="hero-title-line hero-title-line--1">The Light-</span>
+                    <span class="hero-title-line hero-title-line--2">Shadow</span>
+                    <span class="hero-title-line hero-title-line--3">Boundary</span>
+                </h1>
+                <p class="hero-description">在光影的交界處紀錄，<br>讓那些即將被時間忘卻的真實，<br>留下記憶的輪廓。</p>
+                <p class="hero-signature">— 雅布</p>
+                <div class="hero-scroll-hint">
+                    <span>Scroll</span>
+                    <span class="hero-scroll-line"></span>
+                </div>
+            </div>
+            <!-- Right: Featured image -->
+            <div class="hero-image">
+                <div class="hero-image-frame" id="hero-image-frame">
+                    <img id="hero-featured-image" alt="Featured photograph" loading="eager">
+                    <div class="hero-image-caption">
+                        <span>Featured Work</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Portfolio Section -->
     <section id="portfolio" class="portfolio">
         <div class="section-header">
-            <h2>PORTFOLIO</h2>
+            <div class="section-header-meta">
+                <span class="section-header-number">01</span>
+                <span class="section-header-line"></span>
+            </div>
+            <div class="section-header-text">
+                <h2>Selected Works</h2>
+                <p class="section-header-sub">Photographs from the boundary of light and memory</p>
+            </div>
         </div>
-        <div id="gallery" class="masonry-gallery">
+        <div id="gallery" class="gallery">
             <!-- Images will be loaded here by JavaScript -->
         </div>
     </section>
 
     <!-- About Section -->
     <section id="about" class="about">
-        <div class="section-header">
-            <h2>ABOUT</h2>
-        </div>
-        <div class="about-content">
-            <p class="about-quote">「街頭、人像，路過的貓。」</p>
-            <p class="about-text">
-                沒什麼大道理，只想在光影交界處按下快門，記錄下被時間忘卻的影像輪廓。我是雅布
-            </p>
+        <div class="about-grid">
+            <div class="about-meta">
+                <span class="section-header-number">02</span>
+                <span class="section-header-line"></span>
+                <p class="about-meta-label">About the Photographer</p>
+            </div>
+            <div class="about-content">
+                <h3 class="about-heading">街頭、人像，<br>路過的貓。</h3>
+                <p class="about-text">
+                    沒什麼大道理，只想在光影交界處按下快門，記錄下被時間忘卻的影像輪廓。<br><br>
+                    我是雅布。透過鏡頭，我在日常與邊緣之間尋找那些容易被遺忘的片刻——一扇被光穿透的窗、一個轉身的背影、牆上移動的影子。這些照片不是答案，只是問題的另一種形式。
+                </p>
+                <div class="about-meta-line">
+                    <span>Based in Keelung, Taiwan</span>
+                    <span>·</span>
+                    <span>Shooting since 2019</span>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Contact Section -->
     <section id="contact" class="contact">
-        <div class="section-header">
-            <h2>CONTACT</h2>
-        </div>
-        <div class="contact-content">
-            <p>對於作品有興趣，歡迎來信交流。</p>
-            <p class="contact-email">yabu.san@gmail.com</p>
+        <div class="contact-inner">
+            <div class="section-header-meta">
+                <span class="section-header-number">03</span>
+                <span class="section-header-line"></span>
+            </div>
+            <h2 class="contact-heading">Let's talk.</h2>
+            <p class="contact-description">For collaborations, prints, or conversations about the work.</p>
+            <a href="mailto:yabu.san@gmail.com" class="contact-email">yabu.san@gmail.com</a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer>
-        <p>&copy; 2026 The Light-Shadow Boundary. All rights reserved.</p>
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="site-footer-top">
+                <p class="site-footer-brand">The Light-Shadow Boundary</p>
+                <p class="site-footer-tagline">A photography portfolio by Yabu</p>
+            </div>
+            <div class="site-footer-bottom">
+                <p>&copy; 2026 Yabu. All rights reserved.</p>
+                <p>Light · Shadow · Boundary</p>
+            </div>
+        </div>
     </footer>
 
-    <script src="script.js?v=20260813a"></script>
+    <script src="script.js?v=20260813b"></script>
 
     <!-- Floating NEW Filter Button (Mobile) -->
     <button class="floating-new-filter" id="floating-new-filter" title="只看新作品">

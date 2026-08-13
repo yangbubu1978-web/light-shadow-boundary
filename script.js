@@ -4,7 +4,7 @@
 // ========================================
 
 // Google Drive API Configuration
-const GOOGLE_DRIVE_API_KEY='AIzaSyAJLrXNPtsvghA3ApipFmyi3YXZvubweuw';
+const GOOGLE_DRIVE_API_KEY='«redacted:AIza…»';
 const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
 
 // Image list
@@ -330,17 +330,120 @@ function toggleNewFilter() {
     document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
 }
 
+
+// ========================================
+// Hero Featured Image
+// ========================================
+function setupHeroImage() {
+    var heroImg = document.getElementById('hero-featured-image');
+    if (!heroImg || !allImages.length) return;
+    
+    // Pick a random image for the hero
+    var randomIndex = Math.floor(Math.random() * Math.min(10, allImages.length));
+    var featuredImage = allImages[randomIndex];
+    var url = getThumbnailUrl(featuredImage.id).replace('=w400', '=w1200');
+    
+    var tempImg = new Image();
+    tempImg.onload = function() {
+        heroImg.src = url;
+        heroImg.alt = featuredImage.name;
+        setTimeout(function() { heroImg.classList.add('loaded'); }, 100);
+    };
+    tempImg.src = url;
+}
+
+// ========================================
+// Navigation — Scroll Detection
+// ========================================
+function setupNavigationScroll() {
+    var navbar = document.getElementById('navbar');
+    var hero = document.getElementById('home');
+    if (!navbar || !hero) return;
+    
+    function updateNav() {
+        var scrollY = window.scrollY || window.pageYOffset;
+        var heroBottom = hero.offsetHeight;
+        
+        // Add scrolled state
+        if (scrollY > 50) {
+            navbar.classList.add('is-scrolled');
+        } else {
+            navbar.classList.remove('is-scrolled');
+        }
+        
+        // On dark hero section
+        if (scrollY < heroBottom - 100) {
+            navbar.classList.add('is-on-dark');
+        } else {
+            navbar.classList.remove('is-on-dark');
+        }
+    }
+    
+    window.addEventListener('scroll', updateNav, { passive: true });
+    updateNav();
+}
+
+// ========================================
+// Mobile Menu Toggle
+// ========================================
+function setupMobileMenu() {
+    var toggle = document.getElementById('nav-menu-toggle');
+    var menu = document.getElementById('nav-mobile-menu');
+    if (!toggle || !menu) return;
+    
+    toggle.addEventListener('click', function() {
+        var isOpen = menu.classList.contains('is-open');
+        menu.classList.toggle('is-open');
+        toggle.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', !isOpen);
+        document.body.style.overflow = isOpen ? '' : 'hidden';
+    });
+    
+    // Close on link click
+    menu.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            menu.classList.remove('is-open');
+            toggle.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        });
+    });
+}
+
+// ========================================
+// Gallery Item Reveal Animation
+// ========================================
+function setupGalleryReveal() {
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '50px' });
+    
+    document.querySelectorAll('.gallery-item').forEach(function(item) {
+        observer.observe(item);
+    });
+}
+
 // ========================================
 // Navigation Setup
 // ========================================
 function setupNavigation() {
     var navLinks = document.querySelector('.nav-links');
+    if (!navLinks) return;
 
     var newBtn = document.createElement('button');
     newBtn.className = 'new-filter-btn';
-    newBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="new-filter-label">NEW</span>';
+    newBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="new-filter-label">NEW</span>';
     newBtn.addEventListener('click', toggleNewFilter);
     navLinks.appendChild(newBtn);
+    
+    // Setup scroll detection and mobile menu
+    setupNavigationScroll();
+    setupMobileMenu();
 }
 
 // ========================================
@@ -374,6 +477,7 @@ async function loadImages() {
         
         updateSiteLoader(60, '作品索引已就緒', '找到 ' + allImages.length + ' 幅作品');
         displayImages(allImages);
+        setupHeroImage();
         await preloadInitialGalleryImages();
         finishSiteLoader();
         
@@ -529,7 +633,13 @@ function createGalleryItem(image) {
         openLightbox(image);
     });
     
+    // Add hover overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'gallery-item-overlay';
+    overlay.innerHTML = '<span>' + (image.name || 'Untitled') + '</span>';
+    
     item.appendChild(img);
+    item.appendChild(overlay);
     return item;
 }
 
@@ -657,6 +767,9 @@ function displayImages(images) {
     if (displayOrder.length > FIRST_BATCH) {
         loadMoreBatches(gallery, displayOrder, FIRST_BATCH, REMAINING_BATCH);
     }
+    
+    // Setup reveal animation for new items
+    setTimeout(setupGalleryReveal, 100);
 }
 
 function loadMoreBatches(gallery, displayOrder, startIndex, batchSize) {
