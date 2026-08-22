@@ -274,28 +274,41 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
 // Lightbox Navigation
 // ========================================
 
-function nextLightboxImage() {
-    try {
-    currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
-    var nextImage = currentLightboxImages[currentLightboxIndex];
+function showLightboxImageAtIndex(index) {
+    var nextImage = currentLightboxImages[index];
     if (!nextImage) return;
     currentLightboxImage = nextImage;
     var lightbox = document.querySelector('.lightbox');
     if (!lightbox) return;
     var lightboxImg = lightbox.querySelector('.lightbox-img');
-    var currentNum = currentLightboxIndex + 1;
+    var currentNum = index + 1;
     var totalNum = currentLightboxImages.length;
-    
+
     lightboxImg.src = getFullSizeUrl(nextImage.id);
     lightboxImg.alt = nextImage.name;
-    
+
     // Preload adjacent images
-    preloadAdjacentImages(currentLightboxIndex);
-    
+    preloadAdjacentImages(index);
+
     var indicator = lightbox.querySelector('.lightbox-slide-indicator');
     if (indicator) {
         indicator.textContent = currentNum + ' / ' + totalNum;
     }
+}
+
+function nextLightboxImage() {
+    try {
+    currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
+    showLightboxImageAtIndex(currentLightboxIndex);
+    } catch (error) {
+        console.error('Error navigating images:', error);
+    }
+}
+
+function prevLightboxImage() {
+    try {
+    currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length;
+    showLightboxImageAtIndex(currentLightboxIndex);
     } catch (error) {
         console.error('Error navigating images:', error);
     }
@@ -801,11 +814,21 @@ function openLightbox(image) {
     var currentNum = currentLightboxIndex + 1;
     var totalNum = currentLightboxImages.length;
     
-    lightbox.innerHTML = 
+    lightbox.innerHTML =
         '<button class="lightbox-close-btn" aria-label="關閉">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
         '<line x1="18" y1="6" x2="6" y2="18"></line>' +
         '<line x1="6" y1="6" x2="18" y2="18"></line>' +
+        '</svg>' +
+        '</button>' +
+        '<button class="lightbox-nav-btn lightbox-nav-btn--prev" aria-label="上一張">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+        '<polyline points="15 18 9 12 15 6"></polyline>' +
+        '</svg>' +
+        '</button>' +
+        '<button class="lightbox-nav-btn lightbox-nav-btn--next" aria-label="下一張">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+        '<polyline points="9 18 15 12 9 6"></polyline>' +
         '</svg>' +
         '</button>' +
         '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
@@ -825,9 +848,28 @@ function openLightbox(image) {
         closeLightbox();
     });
     
-    lightboxImg.addEventListener('click', function(e) {
+    var prevBtn = lightbox.querySelector('.lightbox-nav-btn--prev');
+    prevBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        prevLightboxImage();
+    });
+    
+    var nextBtn = lightbox.querySelector('.lightbox-nav-btn--next');
+    nextBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         nextLightboxImage();
+    });
+    
+    // 點圖片右半 = 下一張、左半 = 上一張（桌機慣用手勢）
+    lightboxImg.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var rect = lightboxImg.getBoundingClientRect();
+        var clickX = e.clientX - rect.left;
+        if (clickX > rect.width / 2) {
+            nextLightboxImage();
+        } else {
+            prevLightboxImage();
+        }
     });
     
     lightbox.addEventListener('click', function(e) {
@@ -835,6 +877,26 @@ function openLightbox(image) {
             closeLightbox();
         }
     });
+    
+    // 手機滑動切換（touch swipe）
+    var touchStartX = 0;
+    var touchStartY = 0;
+    lightbox.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+    lightbox.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        // 水平滑動超過 50px 且垂直位移不大才算滑動
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) {
+                nextLightboxImage();  // 往左滑 = 下一張
+            } else {
+                prevLightboxImage();  // 往右滑 = 上一張
+            }
+        }
+    }, { passive: true });
 }
 
 // ========================================
@@ -970,8 +1032,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     document.addEventListener('keydown', function(e) {
+        var lightbox = document.querySelector('.lightbox');
+        var lightboxActive = lightbox && lightbox.classList.contains('active');
         if (e.key === 'Escape') {
             closeLightbox();
+        } else if (lightboxActive && e.key === 'ArrowLeft') {
+            prevLightboxImage();
+        } else if (lightboxActive && e.key === 'ArrowRight') {
+            nextLightboxImage();
         }
     });
 });
