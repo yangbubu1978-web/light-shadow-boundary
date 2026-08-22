@@ -1249,9 +1249,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ============================================================
-   FILM PAGE — Rewindpix Archive
+   REWINDPIX PAGE — Film Archive
    ============================================================ */
-.film-hero {
+.rewindpix-hero {
     min-height: 70vh;
     display: flex;
     flex-direction: column;
@@ -1262,11 +1262,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     background: #0d0d0f;
 }
 
-.film-hero .hero-eyebrow {
+.rewindpix-hero .hero-eyebrow {
     color: var(--color-text-on-dark-secondary);
 }
 
-.film-hero-title {
+.rewindpix-hero-title {
     font-family: var(--font-display);
     font-size: clamp(30px, 4.5vw, 56px);
     font-weight: 300;
@@ -1276,14 +1276,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     color: var(--color-text-on-dark);
 }
 
-.film-hero-quote {
+.rewindpix-hero-quote {
     font-size: clamp(14px, 1.6vw, 16px);
     line-height: 2.2;
     color: var(--color-text-on-dark-secondary);
     max-width: 460px;
 }
 
-.film-hero-signature {
+.rewindpix-hero-signature {
     font-family: var(--font-display);
     font-size: 16px;
     color: var(--color-text-on-dark-secondary);
