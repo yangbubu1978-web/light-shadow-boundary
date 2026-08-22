@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fragments of Light — Photography by Yabu</title>
-    <meta name="description" content="記錄光影，也留住那些再平凡不過的日常。A photography portfolio by Yabu.">
+    <title>Film — Fragments of Light</title>
+    <meta name="description" content="底片作品集。Rewindpix — film photography by Yabu.">
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,12 +18,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=20260813e">
 </head>
-<body class="site-loading">
+<body class="site-loading" data-drive-folder="1fFxce9oFf9heiR8yYHMGmLP9ytNALjVj">
     <!-- First-visit loading screen -->
     <div class="site-loader" id="site-loader" role="status" aria-live="polite" aria-label="作品載入進度">
         <div class="site-loader-content">
             <p class="site-loader-kicker">PHOTOGRAPHY · YABU</p>
-            <p class="site-loader-title">Fragments of<br>Light</p>
+            <p class="site-loader-title">Film<br>Archive</p>
             <div class="site-loader-status">
                 <span id="site-loader-message">正在連線至作品集</span>
                 <span id="site-loader-percent">0%</span>
@@ -39,19 +39,18 @@
         <style>.site-loader { display: none !important; } body.site-loading { overflow: auto; }</style>
     </noscript>
 
-    <!-- Navigation — Minimal, Editorial -->
-    <nav class="navbar" id="navbar">
-        <a href="#home" class="nav-brand">
+    <!-- Navigation -->
+    <nav class="navbar navbar--solid" id="navbar">
+        <a href="index.html" class="nav-brand">
             <span class="nav-brand-mark">FOL</span>
             <span class="nav-brand-divider"></span>
             <span class="nav-brand-name">Fragments of Light</span>
         </a>
         <div class="nav-links">
-            <a href="#portfolio">Works</a>
-            <a href="film.html">Film</a>
+            <a href="index.html#portfolio">Works</a>
+            <a href="film.html" class="active">Film</a>
             <a href="about.html">About</a>
             <a href="contact.html">Contact</a>
-            <!-- Filter buttons injected by JS -->
         </div>
         <button class="nav-menu-toggle" id="nav-menu-toggle" aria-label="開啟選單" aria-expanded="false">
             <span class="nav-menu-line"></span>
@@ -62,61 +61,41 @@
     <!-- Mobile overlay menu -->
     <div class="nav-mobile-menu" id="nav-mobile-menu" aria-hidden="true">
         <div class="nav-mobile-menu-inner">
-            <a href="#home" class="nav-mobile-link">Home</a>
-            <a href="#portfolio" class="nav-mobile-link">Works</a>
+            <a href="index.html" class="nav-mobile-link">Home</a>
+            <a href="index.html#portfolio" class="nav-mobile-link">Works</a>
             <a href="film.html" class="nav-mobile-link">Film</a>
             <a href="about.html" class="nav-mobile-link">About</a>
             <a href="contact.html" class="nav-mobile-link">Contact</a>
         </div>
     </div>
 
-    <!-- Hero Section — Editorial Photography Exhibition -->
-    <header id="home" class="hero">
-        <div class="hero-grid">
-            <!-- Left: Typography -->
-            <div class="hero-text">
-                <p class="hero-eyebrow">
-                    <span class="hero-eyebrow-line"></span>
-                    <span>Photographing Since 2004</span>
-                </p>
-                <h1 class="hero-title">
-                    <span class="hero-title-line hero-title-line--1">Fragments</span>
-                    <span class="hero-title-line hero-title-line--2">of Light</span>
-                </h1>
-                <p class="hero-description">
-                    在風景褪色成模糊記憶之前，<br>
-                    隨手記下此刻的光影。<br><br>
-                    如果這些照片觸動了你，<br>
-                    歡迎到我的社群帳號找我聊聊攝影。
-                </p>
-                <p class="hero-signature">— 雅布 重</p>
-                <div class="hero-scroll-hint">
-                    <span>Scroll</span>
-                    <span class="hero-scroll-line"></span>
-                </div>
-            </div>
-            <!-- Right: Featured image -->
-            <div class="hero-image">
-                <div class="hero-image-frame" id="hero-image-frame">
-                    <img id="hero-featured-image" alt="Featured photograph" loading="eager">
-                    <div class="hero-image-caption">
-                        <span>A Fragment of Light</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Film Hero — Editorial -->
+    <header class="film-hero">
+        <p class="hero-eyebrow">
+            <span class="hero-eyebrow-line"></span>
+            <span>Film Photography · Rewindpix</span>
+        </p>
+        <h1 class="film-hero-title">
+            <span class="hero-title-line hero-title-line--1">銀格拉開的瞬間，</span>
+            <span class="hero-title-line hero-title-line--2">時間倒轉成光。</span>
+        </h1>
+        <p class="film-hero-quote">
+            這些影像來自底片——<br>
+            每一次按下快門，都是無法重來的片刻。
+        </p>
+        <p class="film-hero-signature">— 雅布 重</p>
     </header>
 
-    <!-- Portfolio Section -->
-    <section id="portfolio" class="portfolio">
+    <!-- Film Gallery Section -->
+    <section id="portfolio" class="portfolio portfolio--page">
         <div class="section-header">
             <div class="section-header-meta">
-                <span class="section-header-number">01</span>
+                <span class="section-header-number">F</span>
                 <span class="section-header-line"></span>
             </div>
             <div class="section-header-text">
-                <h2>Selected Works</h2>
-                <p class="section-header-sub">Fragments of light, recorded before they fade</p>
+                <h2>Rewindpix</h2>
+                <p class="section-header-sub">Frames recorded on silver halide</p>
             </div>
         </div>
         <div id="gallery" class="gallery">
@@ -139,10 +118,5 @@
     </footer>
 
     <script src="script.js?v=20260813e"></script>
-
-    <!-- Floating NEW Filter Button (Mobile) -->
-    <button class="floating-new-filter" id="floating-new-filter" title="只看新作品">
-        <span class="new-badge" style="position:static;font-size:12px;">NEW</span>
-    </button>
 </body>
 </html>

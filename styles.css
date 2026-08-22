@@ -1249,6 +1249,53 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ============================================================
+   FILM PAGE — Rewindpix Archive
+   ============================================================ */
+.film-hero {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: calc(var(--nav-height) + var(--space-3xl)) var(--content-padding) var(--space-3xl);
+    background: #0d0d0f;
+}
+
+.film-hero .hero-eyebrow {
+    color: var(--color-text-on-dark-secondary);
+}
+
+.film-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 4.5vw, 56px);
+    font-weight: 300;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    margin: var(--space-xl) 0;
+    color: var(--color-text-on-dark);
+}
+
+.film-hero-quote {
+    font-size: clamp(14px, 1.6vw, 16px);
+    line-height: 2.2;
+    color: var(--color-text-on-dark-secondary);
+    max-width: 460px;
+}
+
+.film-hero-signature {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--color-text-on-dark-secondary);
+    margin-top: var(--space-xl);
+    letter-spacing: 0.1em;
+}
+
+.portfolio--page {
+    padding-top: var(--space-3xl);
+}
+
+/* ============================================================
    LIGHTBOX — Dark, Immersive
    ============================================================ */
 .lightbox {

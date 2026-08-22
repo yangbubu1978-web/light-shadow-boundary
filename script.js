@@ -516,6 +516,14 @@ async function loadImages() {
         return;
     }
     
+    // Folder-specific mode: body[data-drive-folder] restricts the gallery
+    // to one Drive folder (e.g. film.html → Rewindpix)
+    var driveFolder = document.body.getAttribute('data-drive-folder');
+    var cacheKey = 'fol-images-cache';
+    if (driveFolder) {
+        cacheKey = 'fol-images-cache-' + driveFolder.substring(0, 10);
+    }
+    
     showSkeleton(18);
     updateSiteLoader(10, '正在連線至作品集', '讀取 Google Drive 作品資料');
     
@@ -524,7 +532,7 @@ async function loadImages() {
         // 先試 localStorage 快取（30 分鐘內避免重複打 API）
         var cached = null;
         try {
-            var cacheRaw = localStorage.getItem('fol-images-cache');
+            var cacheRaw = localStorage.getItem(cacheKey);
             if (cacheRaw) {
                 var cacheData = JSON.parse(cacheRaw);
                 if (cacheData && cacheData.timestamp && (Date.now() - cacheData.timestamp) < 30 * 60 * 1000 && cacheData.images && cacheData.images.length) {
@@ -538,11 +546,17 @@ async function loadImages() {
             allImages = cached;
         } else {
             try {
-                allImages = await fetchImagesFromDrive();
+                if (driveFolder) {
+                    console.log('載入指定資料夾: ' + driveFolder);
+                    allImages = [];
+                    await getFilesRecursive(driveFolder, allImages);
+                } else {
+                    allImages = await fetchImagesFromDrive();
+                }
                 console.log('Google Drive API returned', allImages.length, 'images');
                 // 寫入快取
                 try {
-                    localStorage.setItem('fol-images-cache', JSON.stringify({
+                    localStorage.setItem(cacheKey, JSON.stringify({
                         timestamp: Date.now(),
                         images: allImages
                     }));
