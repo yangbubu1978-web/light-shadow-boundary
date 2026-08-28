@@ -366,79 +366,6 @@ function setupHeroImage() {
 }
 
 // ========================================
-// Intro Spread — 照片旋轉攤開進場效果
-// ========================================
-function runIntroSpread() {
-    // 僅桌機首頁、非簡化動畫偏好才播放
-    if (document.body.getAttribute('data-drive-folder')) return Promise.resolve();
-    if (window.matchMedia('(max-width: 768px)').matches) return Promise.resolve();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
-    if (!allImages || allImages.length < 3) return Promise.resolve();
-    // 若使用者已按「先瀏覽網站」跳過 loader，就不播
-    var loader = document.getElementById('site-loader');
-    if (loader && loader.classList.contains('is-complete')) return Promise.resolve();
-
-    var picks = shuffleArray(allImages).slice(0, 7);
-    var overlay = document.createElement('div');
-    overlay.className = 'intro-spread';
-    overlay.setAttribute('aria-hidden', 'true');
-
-    // 初始疊放角度（像一疊微微散開的拍立得）
-    var initRots = [-7, -4.5, -2, 0, 2, 4.5, 7];
-    // 攤開後的位移與角度（橫向扇形展開）
-    var spread = [
-        { x: -360, y: -18, r: -9 },
-        { x: -240, y: -28, r: -6 },
-        { x: -118, y: -12, r: -3 },
-        { x: 0,    y: 0,   r: 0  },
-        { x: 118,  y: -12, r: 3  },
-        { x: 240,  y: -28, r: 6  },
-        { x: 360,  y: -18, r: 9  }
-    ];
-
-    picks.forEach(function(img, i) {
-        var card = document.createElement('div');
-        card.className = 'intro-spread-card';
-        // 初始疊放位置（全部置中，僅旋轉差異）
-        card.style.transform = 'translate(-50%, -50%) rotate(' + initRots[i] + 'deg) scale(0.96)';
-        card.style.zIndex = String(i);
-        // 讓中間的在最上層
-        if (i === 3) card.style.zIndex = '10';
-        var el = document.createElement('img');
-        el.src = getThumbnailUrl(img.id).replace('=w900', '=w600');
-        el.alt = '';
-        el.loading = 'eager';
-        el.decoding = 'async';
-        card.appendChild(el);
-        overlay.appendChild(card);
-    });
-
-    document.body.appendChild(overlay);
-
-    // 觸發攤開（下一幀）
-    return new Promise(function(resolve) {
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                var cards = overlay.querySelectorAll('.intro-spread-card');
-                cards.forEach(function(card, i) {
-                    card.style.transitionDelay = (i * 55) + 'ms';
-                    var s = spread[i];
-                    card.style.transform = 'translate(calc(-50% + ' + s.x + 'px), calc(-50% + ' + s.y + 'px)) rotate(' + s.r + 'deg) scale(1)';
-                });
-            });
-        });
-        // 1.6s 後淡出並移除，露出下方瀑布流
-        setTimeout(function() {
-            overlay.classList.add('is-fading');
-            setTimeout(function() {
-                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-                resolve();
-            }, 700);
-        }, 1550);
-    });
-}
-
-// ========================================
 // Standalone Page Images (about / contact)
 // ========================================
 async function setupPageImages() {
@@ -668,8 +595,6 @@ async function loadImages() {
         updateSiteLoader(60, '作品索引已就緒', '找到 ' + allImages.length + ' 幅作品');
         displayImages(allImages);
         setupHeroImage();
-        // 旋轉攤開進場（桌機首頁限定）→ 完成後放行
-        await runIntroSpread();
         // 先放行網站（skeleton 佔位已就緒），照片在背景繼續載入
         finishSiteLoader();
         // 背景預載首批照片，不阻塞畫面
