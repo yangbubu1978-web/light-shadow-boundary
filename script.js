@@ -317,10 +317,20 @@ function prevLightboxImage() {
 function closeLightbox() {
     var lightbox = document.querySelector('.lightbox');
     if (lightbox) {
+        if (lightbox._trapHandler) {
+            lightbox.removeEventListener('keydown', lightbox._trapHandler);
+            lightbox._trapHandler = null;
+        }
         lightbox.classList.remove('active');
     }
+    document.body.style.overflow = '';
     currentLightboxImage = null;
     currentLightboxIndex = -1;
+    // 還原焦點至觸發來源
+    if (lightboxPreviousFocus && typeof lightboxPreviousFocus.focus === 'function') {
+        lightboxPreviousFocus.focus();
+    }
+    lightboxPreviousFocus = null;
 }
 
 // ========================================
@@ -726,12 +736,16 @@ function createGalleryItem(image) {
     var item = document.createElement('div');
     item.className = 'gallery-item';
     item.dataset.imageId = image.id;
+    // 無障礙：讓作品可用鍵盤操作
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-label', '開啟作品：' + (image.name || 'Untitled'));
     
     var img = document.createElement('img');
     img.dataset.src = getThumbnailUrl(image.id);
     img.dataset.srcset = getThumbnailSrcset(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
-    img.alt = image.name;
+    img.alt = '';  // 裝飾性圖片，資訊由父層 aria-label 提供，避免朗讀檔名
     // sizes: 依欄寬選擇合適的縮圖（3 欄 masonry，最大欄寬約 450px）
     img.sizes = '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw';
     img.decoding = 'async';
@@ -752,6 +766,12 @@ function createGalleryItem(image) {
     
     item.addEventListener('click', function() {
         openLightbox(image);
+    });
+    item.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openLightbox(image);
+        }
     });
     
     // Add hover overlay
@@ -799,10 +819,13 @@ function removeSkeleton() {
 var currentLightboxImage = null;
 var currentLightboxIndex = -1;
 var currentLightboxImages = [];
+var lightboxPreviousFocus = null;
 
 function openLightbox(image) {
     currentLightboxImage = image;
     currentLightboxIndex = currentLightboxImages.findIndex(function(img) { return img.id === image.id; });
+    // 記住觸發來源，關閉時還原焦點
+    lightboxPreviousFocus = document.activeElement;
     
     var lightbox = document.querySelector('.lightbox');
     if (!lightbox) {
@@ -810,6 +833,10 @@ function openLightbox(image) {
         lightbox.className = 'lightbox';
         document.body.appendChild(lightbox);
     }
+    // 無障礙：宣告為對話框
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', '作品檢視：' + (image.name || 'Untitled'));
     
     var currentNum = currentLightboxIndex + 1;
     var totalNum = currentLightboxImages.length;
@@ -831,8 +858,8 @@ function openLightbox(image) {
         '<polyline points="9 18 15 12 9 6"></polyline>' +
         '</svg>' +
         '</button>' +
-        '<div class="lightbox-slide-indicator">' + currentNum + ' / ' + totalNum + '</div>' +
-        '<img src="" alt="' + image.name + '" class="lightbox-img" decoding="async">';
+        '<div class="lightbox-slide-indicator" aria-live="polite">' + currentNum + ' / ' + totalNum + '</div>' +
+        '<img src="" alt="" class="lightbox-img" decoding="async">';
     
     var lightboxImg = lightbox.querySelector('.lightbox-img');
     lightboxImg.src = getFullSizeUrl(image.id);
@@ -841,6 +868,13 @@ function openLightbox(image) {
     preloadAdjacentImages(currentLightboxIndex);
     
     lightbox.classList.add('active');
+    // 鎖定背景滾動
+    document.body.style.overflow = 'hidden';
+    // 將焦點移至關閉鈕（焦點陷阱起點）
+    setTimeout(function() {
+        var closeBtn = lightbox.querySelector('.lightbox-close-btn');
+        if (closeBtn) closeBtn.focus();
+    }, 30);
     
     var closeBtn = lightbox.querySelector('.lightbox-close-btn');
     closeBtn.addEventListener('click', function(e) {
@@ -877,6 +911,27 @@ function openLightbox(image) {
             closeLightbox();
         }
     });
+    
+    // 焦點陷阱：Tab 僅在 Lightbox 內循環
+    lightbox._trapHandler = function(e) {
+        if (e.key !== 'Tab') return;
+        var focusable = lightbox.querySelectorAll('button:not([disabled])');
+        if (!focusable.length) return;
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    };
+    lightbox.addEventListener('keydown', lightbox._trapHandler);
     
     // 手機滑動切換（touch swipe）
     var touchStartX = 0;

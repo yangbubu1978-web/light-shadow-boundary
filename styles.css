@@ -15,7 +15,7 @@
     --color-text-secondary: #78716c;
     --color-text-tertiary: #a8a29e;
     --color-text-on-dark: #e7e5e4;
-    --color-text-on-dark-secondary: rgba(231, 229, 228, 0.6);
+    --color-text-on-dark-secondary: rgba(231, 229, 228, 0.78);
     --color-border: #d6d3d1;
     --color-border-light: #e7e5e4;
     --color-border-on-dark: rgba(255,255,255,0.12);
@@ -73,6 +73,26 @@ body.site-loading { overflow: hidden; }
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* === Focus Visible — WCAG 2.4.7 === */
+:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+}
+
+/* 深色背景上的焦點（Hero / About hero / Lightbox） */
+.hero :focus-visible,
+.about-hero :focus-visible,
+.contact-hero :focus-visible,
+.rewindpix-hero :focus-visible,
+.about-poem-section :focus-visible,
+.lightbox :focus-visible,
+.site-loader :focus-visible {
+    outline-color: #fff;
+}
+
+/* 移除滑鼠點擊時的醜焦點，僅保留鍵盤焦點 */
+:focus:not(:focus-visible) { outline: none; }
 
 /* === Selection === */
 ::selection {
@@ -147,7 +167,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .site-loader-detail {
     min-height: 18px; margin-top: 16px;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.65);
     font-size: 11px; letter-spacing: 0.08em;
 }
 
@@ -561,6 +581,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .gallery-item.is-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+.gallery-item:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
 }
 
 .gallery-item img {
@@ -1047,7 +1072,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     display: block;
     margin-bottom: var(--space-xl);
     font-size: 12px;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.55);
     letter-spacing: 0.3em;
 }
 
