@@ -436,7 +436,18 @@ async function setupPageImages() {
 function setupNavigationScroll() {
     var navbar = document.getElementById('navbar');
     var hero = document.getElementById('home');
-    if (!navbar || !hero) return;
+    var progress = document.getElementById('scroll-progress');
+    if (!navbar || !hero) {
+        // 沒有 hero 的頁面（如 rewindpix）仍需進度條
+        if (progress) {
+            window.addEventListener('scroll', function() {
+                var docH = document.documentElement.scrollHeight - window.innerHeight;
+                var pct = docH > 0 ? (window.scrollY / docH) * 100 : 0;
+                progress.style.width = pct + '%';
+            }, { passive: true });
+        }
+        return;
+    }
     
     function updateNav() {
         var scrollY = window.scrollY || window.pageYOffset;
@@ -454,6 +465,13 @@ function setupNavigationScroll() {
             navbar.classList.add('is-on-dark');
         } else {
             navbar.classList.remove('is-on-dark');
+        }
+
+        // 閱讀進度條
+        if (progress) {
+            var docH = document.documentElement.scrollHeight - window.innerHeight;
+            var pct = docH > 0 ? (scrollY / docH) * 100 : 0;
+            progress.style.width = pct + '%';
         }
     }
     
@@ -973,7 +991,7 @@ function displayImages(images) {
     removeSkeleton();
     
     if (images.length === 0) {
-        gallery.innerHTML = '<div class="no-likes-message"><p>沒有照片</p></div>';
+        gallery.innerHTML = '<div class="no-likes-message"><p>光尚未抵達——</p><p style="margin-top:8px; font-size:12px; letter-spacing:0.08em; opacity:0.6;">作品準備中，稍後再來看看吧</p></div>';
         currentLightboxImages = [];
         return;
     }

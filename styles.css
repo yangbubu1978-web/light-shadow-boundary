@@ -80,6 +80,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     outline-offset: 2px;
 }
 
+/* === Scroll Progress — 閱讀進度條 === */
+.scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    width: 0%;
+    height: 2px;
+    background: #c9b98a;
+    z-index: 1001;
+    transition: width 0.08s linear;
+    pointer-events: none;
+}
+
 /* 深色背景上的焦點（Hero / About hero / Lightbox） */
 .hero :focus-visible,
 .about-hero :focus-visible,
@@ -591,8 +603,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .gallery-item img {
     width: 100%; height: auto;
     display: block;
-    transition: transform var(--duration-slow) var(--ease-out),
-                filter var(--duration-base) var(--ease-out);
+    transition: transform 0.35s var(--ease-out),
+                filter 0.2s var(--ease-out);
     /* Subtle desaturation at rest — full color on hover */
     filter: saturate(0.92);
 }
@@ -667,7 +679,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .skeleton-item::after {
     content: '';
     position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
     animation: skeleton-shine 1.8s ease-in-out infinite;
 }
 
