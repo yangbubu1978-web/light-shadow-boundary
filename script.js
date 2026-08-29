@@ -767,14 +767,6 @@ function createGalleryItem(image) {
     img.dataset.srcset = getThumbnailSrcset(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
     img.alt = '';  // 裝飾性圖片，資訊由父層 aria-label 提供，避免朗讀檔名
-    // CLS 修復：預先告知瀏覽器圖片比例，載入前就留好正確空間
-    if (image.width && image.height) {
-        img.width = image.width;
-        img.height = image.height;
-        img.style.aspectRatio = image.width + ' / ' + image.height;
-        // 讓容器也先有正確比例，避免圖片載入時推擠下方版面
-        item.style.aspectRatio = image.width + ' / ' + image.height;
-    }
     // sizes: 依欄寬選擇合適的縮圖（3 欄 masonry，最大欄寬約 450px）
     img.sizes = '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw';
     img.decoding = 'async';
