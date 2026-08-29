@@ -189,7 +189,7 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         var filesUrl = 'https://www.googleapis.com/drive/v3/files';
         var filesParams = {
             q: "'" + folderId + "' in parents and mimeType contains 'image/'",
-            fields: 'files(id,name,mimeType,createdTime,imageMediaMetadata(width,height)),nextPageToken',
+            fields: 'files(id,name,mimeType,createdTime,imageMediaMetadata(width,height,rotation)),nextPageToken',
             pageSize: 1000,
             supportsAllDrives: true,
             key: GOOGLE_DRIVE_API_KEY,
@@ -216,12 +216,19 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
         
         for (var i = 0; i < files.length; i++) {
             var meta = files[i].imageMediaMetadata || {};
+            var w = meta.width || null;
+            var h = meta.height || null;
+            // EXIF 旋轉 90/270 度時，寬高需對調，否則直幅會被當成橫幅壓扁
+            if (w && h && (meta.rotation === 90 || meta.rotation === 270)) {
+                var tmp = w; w = h; h = tmp;
+            }
             accumulatedFiles.push({
                 id: files[i].id,
                 name: files[i].name || 'Untitled',
                 createdTime: files[i].createdTime || null,
-                width: meta.width || null,
-                height: meta.height || null
+                width: w,
+                height: h,
+                rotation: meta.rotation || 0
             });
         }
         
@@ -563,9 +570,9 @@ async function loadImages() {
     // Folder-specific mode: body[data-drive-folder] restricts the gallery
     // to one Drive folder (e.g. film.html → Rewindpix)
     var driveFolder = document.body.getAttribute('data-drive-folder');
-    var cacheKey = 'fol-images-cache-v2';
+    var cacheKey = 'fol-images-cache-v3';
     if (driveFolder) {
-        cacheKey = 'fol-images-cache-v2-' + driveFolder.substring(0, 10);
+        cacheKey = 'fol-images-cache-v3-' + driveFolder.substring(0, 10);
     }
     
     showSkeleton(18);
@@ -767,6 +774,13 @@ function createGalleryItem(image) {
     img.dataset.srcset = getThumbnailSrcset(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
     img.alt = '';  // 裝飾性圖片，資訊由父層 aria-label 提供，避免朗讀檔名
+    // CLS 修復：預先告知瀏覽器圖片比例，載入前就留好正確空間
+    // 已處理 EXIF rotation（90/270 度時寬高對調），所以直幅不會再被壓扁
+    if (image.width && image.height) {
+        img.width = image.width;
+        img.height = image.height;
+        img.style.aspectRatio = image.width + ' / ' + image.height;
+    }
     // sizes: 依欄寬選擇合適的縮圖（3 欄 masonry，最大欄寬約 450px）
     img.sizes = '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw';
     img.decoding = 'async';
