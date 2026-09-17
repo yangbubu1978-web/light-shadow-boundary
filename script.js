@@ -464,14 +464,18 @@ function toggleNewFilter() {
     showOnlyNew = !showOnlyNew;
     var btn = document.querySelector('.nav-links .new-filter-btn');
     var floatingBtn = document.getElementById('floating-new-filter');
+    var pressed = String(showOnlyNew);
 
     if (showOnlyNew) {
-        btn.classList.add('active');
+        if (btn) btn.classList.add('active');
         if (floatingBtn) floatingBtn.classList.add('active');
     } else {
-        btn.classList.remove('active');
+        if (btn) btn.classList.remove('active');
         if (floatingBtn) floatingBtn.classList.remove('active');
     }
+    // 開關狀態原本只存在視覺 class，螢幕閱讀器讀不到 → 同步 aria-pressed
+    if (btn) btn.setAttribute('aria-pressed', pressed);
+    if (floatingBtn) floatingBtn.setAttribute('aria-pressed', pressed);
     displayImages(allImages);
     document.getElementById('portfolio')?.scrollIntoView({ top: 0, behavior: 'smooth' });
 }
@@ -560,7 +564,10 @@ async function setupPageImages() {
 // ========================================
 function setupNavigationScroll() {
     var navbar = document.getElementById('navbar');
-    var hero = document.getElementById('home');
+    // 深色首屏不只首頁的 #home：rewindpix.html 的 .rewindpix-hero 也是深色。
+    // 原本只找 #home、找不到就 early return，導致該頁 navbar 永遠沒有主題色 →
+    // 右上角連結 1.11:1 完全看不見。
+    var hero = document.getElementById('home') || document.querySelector('.rewindpix-hero');
     var progress = document.getElementById('scroll-progress');
     if (!navbar || !hero) {
         // 沒有 hero 的頁面（如 rewindpix）仍需進度條
@@ -612,22 +619,37 @@ function setupMobileMenu() {
     var menu = document.getElementById('nav-mobile-menu');
     if (!toggle || !menu) return;
     
+    function setMenuOpen(open) {
+        menu.classList.toggle('is-open', open);
+        toggle.classList.toggle('is-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        // 選單開著時要能被子輔助科技讀到、關著時要隱藏。
+        // 原本只切 class，aria-hidden 永遠停在 "true" → 螢幕閱讀器完全用不了行動導覽。
+        menu.setAttribute('aria-hidden', String(!open));
+        toggle.setAttribute('aria-label', open ? '關閉選單' : '開啟選單');
+        document.body.style.overflow = open ? 'hidden' : '';
+        if (open) {
+            var firstLink = menu.querySelector('a');
+            if (firstLink) firstLink.focus();
+        } else {
+            toggle.focus();
+        }
+    }
+
     toggle.addEventListener('click', function() {
-        var isOpen = menu.classList.contains('is-open');
-        menu.classList.toggle('is-open');
-        toggle.classList.toggle('is-open');
-        toggle.setAttribute('aria-expanded', !isOpen);
-        document.body.style.overflow = isOpen ? '' : 'hidden';
+        setMenuOpen(!menu.classList.contains('is-open'));
     });
-    
+
     // Close on link click
     menu.querySelectorAll('a').forEach(function(link) {
         link.addEventListener('click', function() {
-            menu.classList.remove('is-open');
-            toggle.classList.remove('is-open');
-            toggle.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
+            setMenuOpen(false);
         });
+    });
+
+    // Esc 關閉選單
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && menu.classList.contains('is-open')) setMenuOpen(false);
     });
 }
 
@@ -661,7 +683,10 @@ function setupNavigation() {
     if (!navLinks) return;
 
     var newBtn = document.createElement('button');
+    newBtn.type = 'button';
     newBtn.className = 'new-filter-btn';
+    newBtn.setAttribute('aria-label', '只顯示新作品');
+    newBtn.setAttribute('aria-pressed', 'false');
     newBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="new-filter-label">NEW</span>';
     newBtn.addEventListener('click', toggleNewFilter);
     navLinks.appendChild(newBtn);

@@ -270,7 +270,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    opacity: 0.55;
+    /* 0.55 時在淺色 navbar 上只有 3.87:1（11px 小字需 4.5:1）；
+       0.68 → 約 5.0:1，仍保留「次要連結」的輕盈感 */
+    opacity: 0.68;
     transition: opacity var(--duration-fast) ease;
     position: relative;
 }
