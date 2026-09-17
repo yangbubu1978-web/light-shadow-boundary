@@ -7,6 +7,24 @@
 const GOOGLE_DRIVE_API_KEY='AIzaSyAJLrXNPtsvghA3ApipFmyi3YXZvubweuw';
 const DRIVE_FOLDER_ID = '1_hW6kUof0k79p4GWrcIeWFBLlCghGPUE';
 
+// ========================================
+// WebP 支援偵測
+// Google Photos 的 lh3 端點支援 -rw 參數回傳 WebP，同尺寸約可省 25-30% 體積。
+// 舊瀏覽器（不支援 WebP）自動退回原本的 JPEG，零風險。
+// ========================================
+var SUPPORTS_WEBP = (function() {
+    try {
+        var canvas = document.createElement('canvas');
+        if (canvas.getContext && canvas.getContext('2d')) {
+            return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        }
+    } catch (e) { /* ignore */ }
+    return false;
+})();
+
+// 圖片格式後綴：支援 WebP 時附加 -rw
+var IMG_FMT = SUPPORTS_WEBP ? '-rw' : '';
+
 // Image list
 let allImages = [];
 let showOnlyNew = false;
@@ -174,6 +192,58 @@ function preloadAdjacentImages(index) {
 // Google Drive API Functions (Recursive Subfolder Support)
 // ========================================
 
+// ========================================
+// 靜態索引（由 GitHub Actions 定時產生）
+// ========================================
+// 首屏關鍵路徑：images.json 走 GitHub Pages CDN，
+// 比現場遞迴 7 層 Drive 資料夾（實測約 9.6 秒）快一個數量級。
+async function fetchStaticImageIndex() {
+    try {
+        updateSiteLoader(24, '正在讀取作品索引', '載入 images.json');
+
+        // index.html 已提早觸發下載（見 __imageIndexPromise），優先沿用
+        var data = null;
+        if (window.__imageIndexPromise) {
+            data = await window.__imageIndexPromise;
+            window.__imageIndexPromise = null;
+        }
+        if (!data) {
+            var response = await fetch('images.json', { cache: 'no-cache' });
+            if (!response.ok) {
+                console.warn('images.json 不存在（' + response.status + '），改用 Drive API');
+                return [];
+            }
+            data = await response.json();
+        }
+
+        var list = (data && data.images) || [];
+        if (!list.length) return [];
+
+        // v2 精簡格式為 ["id", "name", "createdTime"] 陣列，轉回物件
+        var images = [];
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            if (!item) continue;
+            if (Array.isArray(item)) {
+                if (!item[0]) continue;
+                images.push({
+                    id: item[0],
+                    name: item[1] || 'Untitled',
+                    createdTime: item[2] || null
+                });
+            } else if (item.id) {
+                images.push(item);
+            }
+        }
+
+        console.log('靜態索引載入 ' + images.length + ' 張作品');
+        return images;
+    } catch (e) {
+        console.warn('images.json 讀取失敗：' + e.message);
+        return [];
+    }
+}
+
 async function fetchImagesFromDrive() {
     console.log('開始遞迴抓取 Google Drive 照片（含子資料夾）...');
     var allFiles = [];
@@ -182,9 +252,11 @@ async function fetchImagesFromDrive() {
     return allFiles;
 }
 
-async function getFilesRecursive(folderId, accumulatedFiles) {
+// 抓取單一資料夾內的圖片（處理分頁）
+async function listImagesInFolder(folderId) {
+    var out = [];
     var pageToken = null;
-    
+
     do {
         var filesUrl = 'https://www.googleapis.com/drive/v3/files';
         var filesParams = {
@@ -195,51 +267,40 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             key: GOOGLE_DRIVE_API_KEY,
             includeItemsFromAllDrives: true
         };
-        
+
         if (pageToken) {
             filesParams.pageToken = pageToken;
         }
-        
+
         var queryString = Object.keys(filesParams).map(function(key) {
             return encodeURIComponent(key) + '=' + encodeURIComponent(filesParams[key]);
         }).join('&');
-        
+
         var response = await fetch(filesUrl + '?' + queryString);
         noteDriveRequest();
         if (!response.ok) {
-            console.error('API 錯誤 ' + response.status + ':', response.statusStatusText);
+            console.error('API 錯誤 ' + response.status + ': ' + response.statusText);
             throw new Error('API returned ' + response.status);
         }
-        
+
         var data = await response.json();
         var files = data.files || [];
-        
         for (var i = 0; i < files.length; i++) {
-            var meta = files[i].imageMediaMetadata || {};
-            var w = meta.width || null;
-            var h = meta.height || null;
-            // EXIF 旋轉 90/270 度時，寬高需對調，否則直幅會被當成橫幅壓扁
-            if (w && h && (meta.rotation === 90 || meta.rotation === 270)) {
-                var tmp = w; w = h; h = tmp;
-            }
-            accumulatedFiles.push({
-                id: files[i].id,
-                name: files[i].name || 'Untitled',
-                createdTime: files[i].createdTime || null,
-                width: w,
-                height: h,
-                rotation: meta.rotation || 0
-            });
+            out.push(files[i]);
         }
-        
-        console.log('資料夾 ' + folderId + ' 抓到 ' + files.length + ' 張，累計: ' + accumulatedFiles.length + ' 張');
+        console.log('資料夾 ' + folderId + ' 抓到 ' + files.length + ' 張，累計: ' + out.length + ' 張');
         pageToken = data.nextPageToken;
-        
+
     } while (pageToken);
-    
-    // 再抓子資料夾
-    var subfoldersToken = null;
-    
+
+    return out;
+}
+
+// 抓取單一資料夾下的子資料夾清單（處理分頁）
+async function listSubfolders(folderId) {
+    var out = [];
+    var pageToken = null;
+
     do {
         var foldersUrl = 'https://www.googleapis.com/drive/v3/files';
         var foldersParams = {
@@ -250,34 +311,85 @@ async function getFilesRecursive(folderId, accumulatedFiles) {
             key: GOOGLE_DRIVE_API_KEY,
             includeItemsFromAllDrives: true
         };
-        
-        if (subfoldersToken) {
-            foldersParams.pageToken = subfoldersToken;
+
+        if (pageToken) {
+            foldersParams.pageToken = pageToken;
         }
-        
+
         var foldersQueryString = Object.keys(foldersParams).map(function(key) {
             return encodeURIComponent(key) + '=' + encodeURIComponent(foldersParams[key]);
         }).join('&');
-        
+
         var foldersResponse = await fetch(foldersUrl + '?' + foldersQueryString);
         noteDriveRequest();
         if (!foldersResponse.ok) break;
-        
+
         var foldersData = await foldersResponse.json();
-        var subfolders = foldersData.files || [];
-        subfoldersToken = foldersData.nextPageToken;
-        
-        for (var j = 0; j < subfolders.length; j++) {
-            console.log('發現子資料夾: ' + subfolders[j].name);
-            var actualFolderId = subfolders[j].id;
-            if (subfolders[j].shortcutDetails && subfolders[j].shortcutDetails.targetId) {
-                actualFolderId = subfolders[j].shortcutDetails.targetId;
-                console.log('  (捷徑指向: ' + actualFolderId + ')');
-            }
-            await getFilesRecursive(actualFolderId, accumulatedFiles);
+        var subs = foldersData.files || [];
+        for (var j = 0; j < subs.length; j++) {
+            out.push(subs[j]);
         }
-        
-    } while (subfoldersToken);
+        pageToken = foldersData.nextPageToken;
+
+    } while (pageToken);
+
+    return out;
+}
+
+// 正規化 Drive 檔案的 metadata（含 EXIF 旋轉處理）
+function normalizeDriveFile(file) {
+    var meta = file.imageMediaMetadata || {};
+    var w = meta.width || null;
+    var h = meta.height || null;
+    // EXIF 旋轉 90/270 度時，寬高需對調，否則直幅會被當成橫幅壓扁
+    if (w && h && (meta.rotation === 90 || meta.rotation === 270)) {
+        var tmp = w; w = h; h = tmp;
+    }
+    return {
+        id: file.id,
+        name: file.name || 'Untitled',
+        createdTime: file.createdTime || null,
+        width: w,
+        height: h,
+        rotation: meta.rotation || 0
+    };
+}
+
+// 遞迴抓取資料夾（含子資料夾）
+// 並行化：原本圖片與子夾清單逐一 await 串聯，深度 7 層要等 14 個往返（實測約 9.6 秒）。
+// 現在同層並行、各子夾並行，時間縮到約與深度成正比。
+async function getFilesRecursive(folderId, accumulatedFiles) {
+    var results = await Promise.all([
+        listImagesInFolder(folderId),
+        listSubfolders(folderId)
+    ]);
+    var imageFiles = results[0];
+    var subfolders = results[1];
+
+    for (var i = 0; i < imageFiles.length; i++) {
+        accumulatedFiles.push(normalizeDriveFile(imageFiles[i]));
+    }
+
+    if (subfolders.length === 0) return;
+
+    var branches = subfolders.map(function(sf) {
+        var actualFolderId = (sf.shortcutDetails && sf.shortcutDetails.targetId) || sf.id;
+        var bucket = [];
+        return getFilesRecursive(actualFolderId, bucket)
+            .then(function() { return bucket; })
+            .catch(function(err) {
+                // 單一子資料夾失敗不影響其他作品
+                console.warn('子資料夾讀取失敗 ' + actualFolderId + '：' + err.message);
+                return bucket;
+            });
+    });
+
+    var buckets = await Promise.all(branches);
+    for (var b = 0; b < buckets.length; b++) {
+        for (var k = 0; k < buckets[b].length; k++) {
+            accumulatedFiles.push(buckets[b][k]);
+        }
+    }
 }
 
 // ========================================
@@ -374,15 +486,20 @@ function setupHeroImage() {
     // Pick a random image from ALL photos (not just the first 10)
     var shuffled = shuffleArray(allImages);
     var featuredImage = shuffled[Math.floor(Math.random() * shuffled.length)];
-    var url = getThumbnailUrl(featuredImage.id).replace('=w900', '=w1200');
     
-    var tempImg = new Image();
-    tempImg.onload = function() {
-        heroImg.src = url;
-        heroImg.alt = featuredImage.name;
-        setTimeout(function() { heroImg.classList.add('loaded'); }, 100);
-    };
-    tempImg.src = url;
+    // 響應式 + 直接指派 src，讓瀏覽器立即開始下載。
+    // （原本用 temp Image 先載完才指派，等於多一輪往返，直接拖慢 LCP）
+    var base = 'https://lh3.googleusercontent.com/d/' + featuredImage.id;
+    heroImg.srcset = base + '=w600' + IMG_FMT + ' 600w,' +
+                     base + '=w900' + IMG_FMT + ' 900w,' +
+                     base + '=w1200' + IMG_FMT + ' 1200w,' +
+                     base + '=w1600' + IMG_FMT + ' 1600w';
+    heroImg.sizes = '(max-width: 900px) 100vw, 50vw';
+    // 這是 LCP 元素，明確提示優先下載
+    try { heroImg.fetchPriority = 'high'; } catch (e) { /* 舊瀏覽器忽略 */ }
+    heroImg.alt = featuredImage.name;
+    heroImg.onload = function() { heroImg.classList.add('loaded'); };
+    heroImg.src = getThumbnailUrl(featuredImage.id);
 }
 
 // ========================================
@@ -596,34 +713,37 @@ async function loadImages() {
         if (cached) {
             allImages = cached;
         } else {
-            try {
-                if (driveFolder) {
-                    console.log('載入指定資料夾: ' + driveFolder);
-                    allImages = [];
-                    await getFilesRecursive(driveFolder, allImages);
-                } else {
-                    allImages = await fetchImagesFromDrive();
-                }
-                console.log('Google Drive API returned', allImages.length, 'images');
-                // 寫入快取
+            // 首選：GitHub Actions 產生的靜態索引（免打 Drive API，快一個數量級）
+            if (!driveFolder) {
+                allImages = await fetchStaticImageIndex();
+            }
+
+            // 備援：靜態索引不可用時才現場打 Drive API
+            if (!allImages.length) {
                 try {
+                    if (driveFolder) {
+                        console.log('載入指定資料夾: ' + driveFolder);
+                        allImages = [];
+                        await getFilesRecursive(driveFolder, allImages);
+                    } else {
+                        allImages = await fetchImagesFromDrive();
+                    }
+                    console.log('Google Drive API returned', allImages.length, 'images');
+                } catch (e) {
+                    console.error('Google Drive API failed:', e.message);
+                    allImages = getDefaultImages();
+                }
+            }
+
+            // 寫入快取
+            try {
+                if (allImages.length) {
                     localStorage.setItem(cacheKey, JSON.stringify({
                         timestamp: Date.now(),
                         images: allImages
                     }));
-                } catch (e) { /* storage full — ignore */ }
-            } catch (e) {
-                console.error('Google Drive API failed:', e.message);
-                try {
-                    var response = await fetch('images.json');
-                    if (response.ok) {
-                        var data = await response.json();
-                        allImages = data.images || [];
-                    }
-                } catch (e2) {
-                    allImages = getDefaultImages();
                 }
-            }
+            } catch (e) { /* storage full — ignore */ }
         }
         
         if (allImages.length === 0) {
@@ -708,19 +828,26 @@ function getDefaultImages() {
 // URL Helpers
 // ========================================
 function getThumbnailUrl(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w900';
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w900' + IMG_FMT;
 }
 
-// 響應式縮圖：600w 給手機 / 900w 給 retina 與平板 / 1600w 給桌面大螢幕
+// 響應式縮圖：依 gallery 實際欄位寬度提供尺寸選項（3 欄版面）
+// 300w: 手機單欄約 110px @ DPR2.6
+// 600w: 手機/平板 retina
+// 900w: 桌機 retina
+// 1600w: 大螢幕 / DPR3
 function getThumbnailSrcset(fileId) {
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w600 600w,' +
-           'https://lh3.googleusercontent.com/d/' + fileId + '=w900 900w,' +
-           'https://lh3.googleusercontent.com/d/' + fileId + '=w1600 1600w';
+    var base = 'https://lh3.googleusercontent.com/d/' + fileId;
+    return base + '=w300' + IMG_FMT + ' 300w,' +
+           base + '=w600' + IMG_FMT + ' 600w,' +
+           base + '=w900' + IMG_FMT + ' 900w,' +
+           base + '=w1200' + IMG_FMT + ' 1200w,' +
+           base + '=w1600' + IMG_FMT + ' 1600w';
 }
 
 function getFullSizeUrl(fileId) {
     // 加上尺寸上限，避免手機原圖（可能 4000px+ / 10MB+）拖垮 Lightbox 載入
-    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w1920';
+    return 'https://lh3.googleusercontent.com/d/' + fileId + '=w1920' + IMG_FMT;
 }
 
 // ========================================
@@ -774,8 +901,9 @@ function createGalleryItem(image) {
     img.dataset.srcset = getThumbnailSrcset(image.id);
     img.dataset.fullSrc = getFullSizeUrl(image.id);
     img.alt = '';  // 裝飾性圖片，資訊由父層 aria-label 提供，避免朗讀檔名
-    // sizes: 依欄寬選擇合適的縮圖（3 欄 masonry，最大欄寬約 450px）
-    img.sizes = '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw';
+    // sizes: 對應 CSS 實際欄數（≤640px 單欄 / ≤1024px 雙欄 / 其餘三欄）
+    // 寫錯會讓瀏覽器抓過大的圖，直接浪費頻寬
+    img.sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw';
     img.decoding = 'async';
     
     img.onload = function() {
