@@ -1501,7 +1501,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     border-radius: 20px;
     font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
     transition: all var(--duration-fast) ease;
-    color: var(--color-text);
+    /* 繼承導覽列文字色（currentColor），深色 hero 上才是淺色 */
+    color: currentColor;
 }
 
 .heart-filter-btn:hover { border-color: var(--color-text-secondary); }
@@ -1517,7 +1518,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     border-radius: 20px;
     font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
     transition: all var(--duration-fast) ease;
-    color: var(--color-text);
+    /* 繼承導覽列文字色（currentColor）— 修掉深色 hero 上 1.13:1 不可讀 */
+    color: currentColor;
 }
 
 .new-filter-btn svg { width: 14px; height: 14px; }
@@ -1525,6 +1527,33 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .new-filter-btn:hover { border-color: var(--color-text-secondary); }
 .new-filter-btn.active { background: var(--color-text); color: var(--color-bg); border-color: var(--color-text); }
 .new-filter-btn.active svg { stroke: var(--color-bg); }
+
+/* ---- 深色 hero 上的濾鏡鈕（navbar.is-on-dark 且尚未捲動時）----
+   原本 border 用 --color-border（#d6d3d1）與 active 用近黑底，
+   在 #0a0a0a 的 hero 上藥丸輪廓會糊掉；此處改成白色系並讓 active 反白。 */
+.navbar.is-on-dark:not(.is-scrolled) .heart-filter-btn,
+.navbar.is-on-dark:not(.is-scrolled) .new-filter-btn {
+    border-color: rgba(255, 255, 255, 0.42);
+}
+.navbar.is-on-dark:not(.is-scrolled) .heart-filter-btn:hover,
+.navbar.is-on-dark:not(.is-scrolled) .new-filter-btn:hover {
+    border-color: rgba(255, 255, 255, 0.55);
+}
+.navbar.is-on-dark:not(.is-scrolled) .heart-filter-btn.active,
+.navbar.is-on-dark:not(.is-scrolled) .new-filter-btn.active {
+    background: var(--color-text-on-dark);
+    color: var(--color-bg-dark);
+    border-color: var(--color-text-on-dark);
+}
+.navbar.is-on-dark:not(.is-scrolled) .new-filter-btn.active svg { stroke: var(--color-bg-dark); }
+.navbar.is-on-dark:not(.is-scrolled) .heart-filter-btn.active svg { fill: currentColor; stroke: currentColor; }
+
+/* .navbar 是 <header class="hero"> 的兄弟節點，不在 .hero 內，
+   所以 styles.css 的白色焦點圈覆寫沒涵蓋到它 → 深色 hero 上鍵盤焦點圈
+   原本是近黑 #1c1917（同為 1.13:1，等於看不見）。 */
+.navbar.is-on-dark:not(.is-scrolled) :focus-visible {
+    outline-color: #fff;
+}
 
 /* Floating NEW Filter (Mobile) */
 .floating-new-filter {
