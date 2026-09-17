@@ -628,6 +628,8 @@ function setupMobileMenu() {
         menu.setAttribute('aria-hidden', String(!open));
         toggle.setAttribute('aria-label', open ? '關閉選單' : '開啟選單');
         document.body.style.overflow = open ? 'hidden' : '';
+        // 讓 CSS 能把 navbar 切回淺色表面（否則品牌字在白底選單上只有 1.20:1）
+        document.body.classList.toggle('menu-open', open);
         if (open) {
             var firstLink = menu.querySelector('a');
             if (firstLink) firstLink.focus();

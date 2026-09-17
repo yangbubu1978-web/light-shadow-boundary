@@ -293,7 +293,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .nav-menu-toggle {
     display: none;
     flex-direction: column; gap: 5px;
-    width: 28px; height: 28px;
+    /* 觸控目標 28×28 → 44×44（線條仍 20×1）；負 margin 讓右緣光學位置不變 */
+    width: 44px; height: 44px;
+    margin-right: -8px;
+    /* 關鍵：styles.css 的 button reset 沒有 color: inherit，
+       <button> 會吃瀏覽器預設的 buttontext（黑），
+       導致這顆鈕在深色 hero 上 #000 on #0a0a0a = 1.06:1（整顆看不見） */
+    color: inherit;
     justify-content: center; align-items: center;
     cursor: pointer;
 }
@@ -307,6 +313,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .nav-menu-toggle.is-open .nav-menu-line:first-child { transform: translateY(3px) rotate(45deg); }
 .nav-menu-toggle.is-open .nav-menu-line:last-child { transform: translateY(-3px) rotate(-45deg); }
+
+/* 手機選單開啟時：navbar 疊在白色選單（z-index 999）之上，
+   但顏色仍停在 is-on-dark 的 #e7e5e4 → 品牌 FOL 在白底上只有 1.20:1（等於消失）。
+   開啟時把 navbar 切回淺色表面。body.menu-open 由 script.js 的 setMenuOpen 維護。 */
+body.menu-open .navbar {
+    color: var(--color-text);
+    border-bottom-color: var(--color-border-light);
+}
+/* 必須蓋過 .navbar.is-on-dark:not(.is-scrolled) 的白色焦點圈，
+   否則會變成白圈疊白底（等於把焦點圈打掉） */
+body.menu-open .navbar.is-on-dark:not(.is-scrolled) :focus-visible,
+body.menu-open .navbar :focus-visible {
+    outline-color: var(--color-text);
+}
+/* 浮動 NEW 藥丸與選單同層 z-index:999 且 DOM 在後面 → 開啟時淡出，避免壓住選單內容 */
+body.menu-open .floating-new-filter {
+    opacity: 0;
+    pointer-events: none;
+}
 
 /* Mobile overlay menu */
 .nav-mobile-menu {
