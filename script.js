@@ -208,6 +208,7 @@ async function fetchStaticImageIndex() {
             window.__imageIndexPromise = null;
         }
         if (!data) {
+            // no-cache：每次都向伺服器驗證（GitHub Pages 支援 ETag，沒變只回 304）
             var response = await fetch('images.json', { cache: 'no-cache' });
             if (!response.ok) {
                 console.warn('images.json 不存在（' + response.status + '），改用 Drive API');
@@ -687,9 +688,9 @@ async function loadImages() {
     // Folder-specific mode: body[data-drive-folder] restricts the gallery
     // to one Drive folder (e.g. film.html → Rewindpix)
     var driveFolder = document.body.getAttribute('data-drive-folder');
-    var cacheKey = 'fol-images-cache-v3';
+    var cacheKey = 'fol-images-cache-v4';
     if (driveFolder) {
-        cacheKey = 'fol-images-cache-v3-' + driveFolder.substring(0, 10);
+        cacheKey = 'fol-images-cache-v4-' + driveFolder.substring(0, 10);
     }
     
     showSkeleton(18);
@@ -703,7 +704,7 @@ async function loadImages() {
             var cacheRaw = localStorage.getItem(cacheKey);
             if (cacheRaw) {
                 var cacheData = JSON.parse(cacheRaw);
-                if (cacheData && cacheData.timestamp && (Date.now() - cacheData.timestamp) < 30 * 60 * 1000 && cacheData.images && cacheData.images.length) {
+                if (cacheData && cacheData.timestamp && (Date.now() - cacheData.timestamp) < 5 * 60 * 1000 && cacheData.images && cacheData.images.length) {
                     cached = cacheData.images;
                     console.log('使用快取照片清單 (' + cached.length + ' 張)');
                 }
