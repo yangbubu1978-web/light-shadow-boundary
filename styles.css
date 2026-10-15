@@ -1397,14 +1397,9 @@ body.menu-open .floating-new-filter {
 /* ============================================================
    REWINDPIX PAGE — Film Archive
    ============================================================ */
+/* rewindpix 的 hero 沿用首頁 .hero + .hero-grid 的雙欄版型（左文右圖），
+   這裡只覆寫底色；照片固定為 PS135，不走首頁的隨機挑圖。 */
 .rewindpix-hero {
-    min-height: 70vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: calc(var(--nav-height) + var(--space-3xl)) var(--content-padding) var(--space-3xl);
     background: #0d0d0f;
 }
 
