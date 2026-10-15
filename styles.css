@@ -1398,9 +1398,23 @@ body.menu-open .floating-new-filter {
    REWINDPIX PAGE — Film Archive
    ============================================================ */
 /* rewindpix 的 hero 沿用首頁 .hero + .hero-grid 的雙欄版型（左文右圖），
-   這裡只覆寫底色；照片固定為 PS135，不走首頁的隨機挑圖。 */
+   這裡只覆寫底色；照片固定為 PS135，不走首頁的隨機挑圖。
+
+   兩處覆寫的原因：
+   1. 首頁那張隨機照片由 JS 在 onload 時加 .loaded 才淡入（img 預設 opacity:0），
+      這裡是固定的靜態照片，沒有那段 JS，所以要直接顯示。
+   2. .hero-image-frame 首頁是 3:4 直幅框配 object-fit:cover，
+      對橫幅（4:3）的相機照會把左右裁掉 → 改成 4:3，完整呈現。 */
 .rewindpix-hero {
     background: #0d0d0f;
+}
+
+.rewindpix-hero .hero-image-frame {
+    aspect-ratio: 4 / 3;
+}
+
+.rewindpix-hero .hero-image-frame img {
+    opacity: 1;
 }
 
 .rewindpix-hero .hero-eyebrow {
