@@ -1468,10 +1468,19 @@ body.menu-open .floating-new-filter {
     margin-top: var(--space-sm);
 }
 
-/* 手機再收一級：段距 16→8px、照片與文字間距 32→24px */
+/* 手機再收一級：
+   1. 段距 16→8px、照片與文字間距 32→24px
+   2. 高度不再強制滿版（首頁的 100vh 是給沉浸式大字標題用的；
+      這頁是說明文字，滿版會讓上下留白過多、看起來鬆散）→ 改成剛好包住內容，
+      下方露出作品牆一角，反而有「往下滑」的引導。 */
 @media (max-width: 900px) {
     .rewindpix-hero .hero-text { gap: var(--space-sm); }
     .rewindpix-hero .hero-grid { gap: var(--space-lg); }
+    .rewindpix-hero {
+        min-height: auto;
+        padding-top: calc(var(--nav-height) + var(--space-lg));
+        padding-bottom: var(--space-2xl);
+    }
 }
 
 .rewindpix-hero-title {
