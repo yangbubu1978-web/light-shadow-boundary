@@ -1762,6 +1762,14 @@ body.menu-open .floating-new-filter {
     .heart-filter-btn span,
     .new-filter-btn .new-filter-label { display: none; }
     .heart-filter-btn, .new-filter-btn { padding: 5px 8px; }
+
+    /* 浮動 NEW 藥丸固定在右下（bottom 24px、高約 33px）。
+       手機捲到接近頁尾時，最後一張照片正好落在它底下被蓋住。
+       原本 .portfolio 的 128px 底部留白不足 → 加大到 224px，
+       讓接近底部時畫面下方是留白而不是照片。 */
+    .portfolio {
+        padding-bottom: calc(var(--space-5xl) + var(--space-4xl));
+    }
 }
 
 /* ============================================================
