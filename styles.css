@@ -862,6 +862,26 @@ body.menu-open .floating-new-filter {
     margin-bottom: var(--space-lg);
 }
 
+.camera-note-figure {
+    margin: 0 0 var(--space-2xl);
+    padding: 0 var(--content-padding);
+    max-width: 760px;
+}
+
+.camera-note-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.camera-note-caption {
+    margin-top: var(--space-sm);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    color: var(--color-text-tertiary);
+}
+
 .camera-note-body p.camera-note-lead {
     font-size: clamp(1.25rem, 2.2vw, 1.625rem);
     line-height: 1.95;
