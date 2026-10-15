@@ -843,6 +843,68 @@ body.menu-open .floating-new-filter {
 /* ============================================================
    FOOTER — Dark, Refined
    ============================================================ */
+/* Camera Note — 相機介紹與推薦連結 */
+.camera-note {
+    border-top: 1px solid var(--color-border-light);
+}
+
+.camera-note-body {
+    padding: 0 var(--content-padding) var(--space-4xl);
+    max-width: 760px;
+}
+
+.camera-note-body p {
+    font-family: var(--font-display);
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 2.1;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
+    margin-bottom: var(--space-lg);
+}
+
+.camera-note-body p.camera-note-lead {
+    font-size: clamp(1.25rem, 2.2vw, 1.625rem);
+    line-height: 1.95;
+    letter-spacing: 0.02em;
+    margin-bottom: var(--space-xl);
+}
+
+.camera-note-body p.camera-note-cta {
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+}
+
+.camera-note-cta a {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text);
+    text-decoration: none;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--color-text);
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.camera-note-cta a:hover { opacity: 0.62; }
+
+.camera-note-arrow {
+    display: inline-block;
+    margin-left: 8px;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.camera-note-cta a:hover .camera-note-arrow { transform: translateX(3px); }
+
+.camera-note-body p.camera-note-disclosure {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    color: var(--color-text-tertiary);
+    margin: 0;
+}
+
 .site-footer {
     background: var(--color-bg-dark);
     color: var(--color-text-on-dark);
