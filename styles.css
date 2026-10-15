@@ -1421,6 +1421,46 @@ body.menu-open .floating-new-filter {
     color: var(--color-text-on-dark-secondary);
 }
 
+/* hero 是深色底，連結與揭露要用淺色（不能沿用淺色區塊那份深色樣式） */
+.rewindpix-hero .hero-description + .hero-description {
+    margin-top: var(--space-md);
+}
+
+.rewindpix-hero-cta {
+    margin: var(--space-xl) 0 0;
+}
+
+.rewindpix-hero-cta a {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text-on-dark);
+    text-decoration: none;
+    padding-bottom: 4px;
+    border-bottom: 1px solid currentColor;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.rewindpix-hero-cta a:hover { opacity: 0.66; }
+
+.rewindpix-arrow {
+    display: inline-block;
+    margin-left: 8px;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.rewindpix-hero-cta a:hover .rewindpix-arrow { transform: translateX(3px); }
+
+.rewindpix-hero-disclosure {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    color: var(--color-text-on-dark-secondary);
+    margin-top: var(--space-md);
+}
+
 .rewindpix-hero-title {
     font-family: var(--font-display);
     font-size: clamp(30px, 4.5vw, 56px);
