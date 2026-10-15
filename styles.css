@@ -1422,12 +1422,19 @@ body.menu-open .floating-new-filter {
 }
 
 /* hero 是深色底，連結與揭露要用淺色（不能沿用淺色區塊那份深色樣式） */
-.rewindpix-hero .hero-description + .hero-description {
-    margin-top: var(--space-md);
+/* 這頁的 hero 是說明文字，不是首頁那種大字標題：
+   首頁的 gap 24px + line-height 2.2 用在這裡會鬆掉、手機看起來很冗長，
+   所以在這頁單獨收緊（首頁不動）。 */
+.rewindpix-hero .hero-text {
+    gap: var(--space-md);
+}
+
+.rewindpix-hero .hero-description {
+    line-height: 1.85;
 }
 
 .rewindpix-hero-cta {
-    margin: var(--space-xl) 0 0;
+    margin: var(--space-md) 0 0;
 }
 
 .rewindpix-hero-cta a {
@@ -1455,10 +1462,16 @@ body.menu-open .floating-new-filter {
 .rewindpix-hero-disclosure {
     font-family: var(--font-body);
     font-size: 0.8125rem;
-    line-height: 1.7;
+    line-height: 1.6;
     letter-spacing: 0.01em;
     color: var(--color-text-on-dark-secondary);
-    margin-top: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+/* 手機再收一級：段距 16→8px、照片與文字間距 32→24px */
+@media (max-width: 900px) {
+    .rewindpix-hero .hero-text { gap: var(--space-sm); }
+    .rewindpix-hero .hero-grid { gap: var(--space-lg); }
 }
 
 .rewindpix-hero-title {
