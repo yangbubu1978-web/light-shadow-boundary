@@ -1755,6 +1755,13 @@ body.menu-open .floating-new-filter {
 .floating-new-filter.active { background: var(--color-text); color: var(--color-bg); border-color: var(--color-text); }
 .floating-new-filter .new-badge { font-size: 10px; letter-spacing: 0.15em; }
 
+/* 滑動中幾乎隱形、停手後浮現（見 script.js）：
+   它固定在右下，而作品牆有 300+ 張照片，捲到哪都會蓋到圖。 */
+.floating-new-filter.is-scrolling {
+    opacity: 0.12;
+    pointer-events: none;
+}
+
 @media (max-width: 768px) {
     .floating-new-filter { display: flex; }
     .nav-links .heart-filter-btn,

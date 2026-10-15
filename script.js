@@ -1238,6 +1238,18 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingNewBtn.addEventListener('click', function() {
             toggleNewFilter();
         });
+
+        // 這顆按鈕固定在右下，而作品牆有 300+ 張照片：捲到任何位置，
+        // 右下角都一定有照片被它蓋住（只在頁尾加留白治不了）。
+        // 滑動中讓它幾乎隱形、停手後再浮現，干擾最小又不影響點擊。
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            floatingNewBtn.classList.add('is-scrolling');
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(function() {
+                floatingNewBtn.classList.remove('is-scrolling');
+            }, 450);
+        }, { passive: true });
     }
     
     document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
