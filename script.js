@@ -1020,7 +1020,9 @@ function openLightbox(image) {
     // 無障礙：宣告為對話框
     lightbox.setAttribute('role', 'dialog');
     lightbox.setAttribute('aria-modal', 'true');
-    lightbox.setAttribute('aria-label', '作品檢視：' + (image.name || 'Untitled'));
+    lightbox.setAttribute('aria-label',
+        '作品檢視：' + (image.name || 'Untitled') +
+        '。點照片左半邊看上一張、右半邊看下一張；手機可左右滑動，鍵盤可用左右方向鍵，Esc 關閉。');
     
     var currentNum = currentLightboxIndex + 1;
     var totalNum = currentLightboxImages.length;
@@ -1030,16 +1032,6 @@ function openLightbox(image) {
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
         '<line x1="18" y1="6" x2="6" y2="18"></line>' +
         '<line x1="6" y1="6" x2="18" y2="18"></line>' +
-        '</svg>' +
-        '</button>' +
-        '<button class="lightbox-nav-btn lightbox-nav-btn--prev" aria-label="上一張">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-        '<polyline points="15 18 9 12 15 6"></polyline>' +
-        '</svg>' +
-        '</button>' +
-        '<button class="lightbox-nav-btn lightbox-nav-btn--next" aria-label="下一張">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-        '<polyline points="9 18 15 12 9 6"></polyline>' +
         '</svg>' +
         '</button>' +
         '<div class="lightbox-slide-indicator" aria-live="polite">' + currentNum + ' / ' + totalNum + '</div>' +
@@ -1066,18 +1058,10 @@ function openLightbox(image) {
         closeLightbox();
     });
     
-    var prevBtn = lightbox.querySelector('.lightbox-nav-btn--prev');
-    prevBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        prevLightboxImage();
-    });
-    
-    var nextBtn = lightbox.querySelector('.lightbox-nav-btn--next');
-    nextBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        nextLightboxImage();
-    });
-    
+    // 導航改用直接點擊，不放左右箭頭按鈕：
+    // 點照片左半 = 上一張、右半 = 下一張（見下方 lightboxImg 的 click）；
+    // 手機另有左右滑動、鍵盤另有左右方向鍵。
+
     // 點圖片右半 = 下一張、左半 = 上一張（桌機慣用手勢）
     lightboxImg.addEventListener('click', function(e) {
         e.stopPropagation();
