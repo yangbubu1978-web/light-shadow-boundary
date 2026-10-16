@@ -147,26 +147,27 @@ function processImageQueue() {
 
 function loadImage(img, src) {
     currentlyLoading++;
-    const tempImg = new Image();
-    tempImg.onload = function() {
-        img.src = src;
-        // 一併套用響應式 srcset，瀏覽器會依裝置像素密度選擇最佳縮圖
-        if (img.dataset.srcset) {
-            img.srcset = img.dataset.srcset;
+    // 直接指派給要顯示的 img，不再用 temp Image 預載。
+    // 預載會讓同一張圖被抓兩次（tempImg 一次、img.src 再一次），
+    // 而 Google Photos 的 URL 沒有可用的 HTTP 快取（實測 from-cache = 0），
+    // 等於每次重繪都多花一倍下載量。
+    var finish = function(ok) {
+        if (!ok) {
+            img.dataset.loaded = 'false';   // 允許之後重試
+            console.warn('Failed to load image:', src);
         }
+        currentlyLoading--;
+        processImageQueue();
+        img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: ok } }));
+    };
+    img.addEventListener('load', function() {
         img.classList.add('loaded');
-        img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: true } }));
-        currentlyLoading--;
-        processImageQueue();
-    };
-    tempImg.onerror = function() {
-        currentlyLoading--;
-        processImageQueue();
-        img.dataset.loaded = 'false'; // allow retry
-        img.dispatchEvent(new CustomEvent('gallery-image-settled', { detail: { success: false } }));
-        console.warn('Failed to load image:', src);
-    };
-    tempImg.src = src;
+        finish(true);
+    }, { once: true });
+    img.addEventListener('error', function() { finish(false); }, { once: true });
+    // srcset 與 src 同時給：瀏覽器依 sizes 挑一個尺寸下載，不會兩張都抓
+    if (img.dataset.srcset) img.srcset = img.dataset.srcset;
+    img.src = src;
 }
 
 // ========================================
@@ -916,7 +917,24 @@ function filterNew(images) {
 // ========================================
 // Gallery Functions (Optimized)
 // ========================================
+// 已建立過的卡片快取（imageId → DOM 元素）
+// 為什麼需要：Google Photos 的圖片 URL 沒有可用的 HTTP 快取
+// （實測每次重繪 from-cache 都是 0），重繪時若重建 <img>，
+// 整批圖片就要重新下載（實測每次 1-9 MB、最長耗時還會遞增）。
+// 重用既有節點就完全不會重新下載。
+var galleryItemCache = new Map();
+const GALLERY_ITEM_CACHE_LIMIT = 400;   // 上限，避免長時間瀏覽後佔用記憶體
+
 function createGalleryItem(image) {
+    var cached = galleryItemCache.get(image.id);
+    if (cached) {
+        // 重繪時 globalObserver 已被 disconnect，還沒載完的圖要重新掛上觀察，
+        // 否則它會永遠停在未載入狀態。
+        var cachedImg = cached.querySelector('img');
+        if (cachedImg && !cachedImg.src) observeImage(cachedImg);
+        return cached;              // 重用 → 圖片不必重新下載
+    }
+
     var item = document.createElement('div');
     item.className = 'gallery-item';
     item.dataset.imageId = image.id;
@@ -935,9 +953,7 @@ function createGalleryItem(image) {
     img.sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw';
     img.decoding = 'async';
     
-    img.onload = function() {
-        img.classList.add('loaded');
-    };
+    // 載入完成由 loadImage() 的 load 監聽器負責加 .loaded（單一來源，避免重複）
     
     // Use shared global observer (lazy load)
     observeImage(img);
@@ -966,6 +982,12 @@ function createGalleryItem(image) {
     
     item.appendChild(img);
     item.appendChild(overlay);
+
+    galleryItemCache.set(image.id, item);
+    if (galleryItemCache.size > GALLERY_ITEM_CACHE_LIMIT) {
+        // 超過上限就丟掉最舊的，讓它可以被回收
+        galleryItemCache.delete(galleryItemCache.keys().next().value);
+    }
     return item;
 }
 
