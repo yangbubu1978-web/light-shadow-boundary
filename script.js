@@ -1141,6 +1141,9 @@ function displayImages(images) {
     if (globalObserver) {
         globalObserver.disconnect();   // 實例保留，後續 observeImage 會繼續使用
     }
+    if (revealObserver) {
+        revealObserver.disconnect();   // 淡入觀察器同樣持有已移除的卡片 → 節點回收不掉
+    }
     imageLoadQueue.length = 0;
     
     if (images.length === 0) {
