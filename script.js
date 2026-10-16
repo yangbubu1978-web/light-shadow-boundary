@@ -101,6 +101,7 @@ function setupSiteLoader() {
 let globalObserver = null;
 let imageLoadQueue = [];
 let currentlyLoading = 0;
+let galleryObserver = null;   // 分批載入用的 sentinel 觀察器（模組層級：重繪時必須能清掉）
 const MAX_CONCURRENT_LOADS = 8;  // Parallel loading for faster first paint
 
 function initGlobalObserver() {
@@ -1128,6 +1129,19 @@ function openLightbox(image) {
 function displayImages(images) {
     var gallery = document.getElementById('gallery');
     removeSkeleton();
+
+    // 重繪前先清理上一輪的觀察器與佇列。
+    // 不做這件事的代價（實測）：globalObserver 仍持有已移除圖片的參照，
+    // 那些節點永遠不會被回收 —— 反覆切換 NEW 每次留下約 1300 個孤兒節點，
+    // 手機記憶體吃緊後就明顯變慢。galleryObserver 不清則會殘留多個 sentinel。
+    if (galleryObserver) {
+        galleryObserver.disconnect();
+        galleryObserver = null;
+    }
+    if (globalObserver) {
+        globalObserver.disconnect();   // 實例保留，後續 observeImage 會繼續使用
+    }
+    imageLoadQueue.length = 0;
     
     if (images.length === 0) {
         gallery.innerHTML = '<div class="no-likes-message"><p>光尚未抵達——</p><p style="margin-top:8px; font-size:12px; letter-spacing:0.08em; opacity:0.6;">作品準備中，稍後再來看看吧</p></div>';
@@ -1167,12 +1181,22 @@ function displayImages(images) {
 }
 
 function loadMoreBatches(gallery, displayOrder, startIndex, batchSize) {
-    var galleryObserver = new IntersectionObserver(function(entries) {
+    // 舊 sentinel 先移除、舊觀察器先斷開 —— 否則每輪會多留一個 sentinel，
+    // 多個觀察器同時對 sentinel 有反應還會重複觸發分批載入（實測看到 2 個 sentinel）。
+    var oldSentinel = document.getElementById('gallery-scroll-sentinel');
+    if (oldSentinel && oldSentinel.parentNode) oldSentinel.parentNode.removeChild(oldSentinel);
+    if (galleryObserver) {
+        galleryObserver.disconnect();
+        galleryObserver = null;
+    }
+
+    galleryObserver = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
             if (entry.isIntersecting) {
                 var sentinel = entry.target;
-                loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, galleryObserver);
-                galleryObserver.unobserve(sentinel);
+                // 先解除觀察，再載入 —— loadNextBatch 可能把整個觀察器收掉
+                if (galleryObserver) galleryObserver.unobserve(sentinel);
+                loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel);
             }
         });
     }, { rootMargin: '400px' });
@@ -1184,7 +1208,7 @@ function loadMoreBatches(gallery, displayOrder, startIndex, batchSize) {
     galleryObserver.observe(sentinel);
 }
 
-function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, galleryObserver) {
+function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel) {
     var fragment = document.createDocumentFragment();
     var end = Math.min(startIndex + batchSize, displayOrder.length);
     
@@ -1199,13 +1223,16 @@ function loadNextBatch(gallery, displayOrder, startIndex, batchSize, sentinel, g
     
     var nextStart = startIndex + batchSize;
     if (nextStart < displayOrder.length) {
-        // Update sentinel position reference for next batch
+        // 下一批：loadMoreBatches 會先斷開舊觀察器、換上新的 sentinel
         loadMoreBatches(gallery, displayOrder, nextStart, batchSize);
     } else {
-        // All loaded, remove sentinel
+        // 全部載完：sentinel 與觀察器都收乾淨，不留孤兒節點
         if (sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+        if (galleryObserver) {
+            galleryObserver.disconnect();
+            galleryObserver = null;
+        }
     }
-    galleryObserver.disconnect();
 }
 
 // ========================================
