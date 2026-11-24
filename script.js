@@ -1182,7 +1182,7 @@ function displayImages(images) {
     }
     
     currentLightboxImages = displayOrder.slice();
-    gallery.innerHTML = '';
+    gallery.replaceChildren();
     
     // Clear preload cache on re-render
     lightboxPreloadCache.clear();
